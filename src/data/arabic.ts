@@ -1,0 +1,91 @@
+export const arabicContent = {
+    nav: {
+      services: 'الخدمات',
+      about: 'عن الشركة',
+      contact: 'تواصل معنا',
+      dashboard: 'لوحة التحكم',
+    },
+    home: {
+      hero: 'التميز القانوني المميز',
+      heroSub: 'تقديم خدمات قانونية عالمية للشركات والأفراد',
+      getStarted: 'ابدأ الآن',
+      learnMore: 'تعرف أكثر',
+    },
+    auth: {
+      login: 'تسجيل الدخول',
+      email: 'البريد الإلكتروني',
+      password: 'كلمة المرور',
+      signIn: 'دخول',
+      testCredentials: 'بيانات الاختبار أعلاه',
+    },
+    admin: {
+      dashboard: 'لوحة التحكم',
+      clients: 'العملاء',
+      cases: 'القضايا',
+      totalClients: 'إجمالي العملاء',
+      activeCases: 'القضايا النشطة',
+      revenue: 'الإيرادات',
+    },
+    client: {
+      dashboard: 'لوحة التحكم',
+      myCases: 'قضاياي',
+      profile: 'الملف الشخصي',
+      welcomeBack: 'أهلاً وسهلاً',
+      documents: 'المستندات',
+    },
+    footer: {
+      rights: 'جميع الحقوق محفوظة',
+      privacy: 'سياسة الخصوصية',
+      terms: 'شروط الخدمة',
+      contact: 'تواصل معنا',
+      address: 'العنوان',
+      phone: 'الهاتف',
+      email: 'البريد الإلكتروني',
+    },
+  }
+  
+  export const englishContent = {
+    nav: {
+      services: 'Services',
+      about: 'About',
+      contact: 'Contact',
+      dashboard: 'Dashboard',
+    },
+    home: {
+      hero: 'Premium Legal Excellence',
+      heroSub: 'Providing world-class legal services for corporations and individuals',
+      getStarted: 'Get Started',
+      learnMore: 'Learn More',
+    },
+    auth: {
+      login: 'Login',
+      email: 'Email',
+      password: 'Password',
+      signIn: 'Sign In',
+      testCredentials: 'Test credentials above',
+    },
+    admin: {
+      dashboard: 'Admin Dashboard',
+      clients: 'Clients',
+      cases: 'Cases',
+      totalClients: 'Total Clients',
+      activeCases: 'Active Cases',
+      revenue: 'Revenue',
+    },
+    client: {
+      dashboard: 'Dashboard',
+      myCases: 'My Cases',
+      profile: 'Profile',
+      welcomeBack: 'Welcome Back',
+      documents: 'Documents',
+    },
+    footer: {
+      rights: 'All rights reserved',
+      privacy: 'Privacy Policy',
+      terms: 'Terms of Service',
+      contact: 'Contact Us',
+      address: 'Address',
+      phone: 'Phone',
+      email: 'Email',
+    },
+  }

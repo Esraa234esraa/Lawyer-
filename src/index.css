@@ -1,0 +1,160 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800&family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* RTL Base Styles */
+@layer base {
+  html {
+    @apply scroll-smooth;
+    direction: rtl;
+    lang: ar;
+  }
+
+  [dir="rtl"] {
+    @apply text-right;
+    direction: rtl;
+  }
+
+  [dir="ltr"] {
+    @apply text-left;
+    direction: ltr;
+  }
+
+  body {
+    @apply bg-charcoal text-white font-cairo;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-cairo font-bold;
+  }
+
+  h1 {
+    @apply text-display;
+  }
+
+  h2 {
+    @apply text-heading-1;
+  }
+
+  h3 {
+    @apply text-heading-2;
+  }
+
+  button {
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* RTL List Styles */
+  ul, ol {
+    @apply ms-6;
+  }
+
+  /* RTL Table Styles */
+  table {
+    @apply w-full text-right;
+  }
+
+  th {
+    @apply text-right;
+  }
+
+  td {
+    @apply text-right;
+  }
+}
+
+/* RTL Component Utilities */
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center px-6 py-3 font-semibold rounded-lg transition-all duration-300;
+  }
+
+  .btn-primary {
+    @apply btn bg-gold text-primary-black hover:bg-gold-light;
+  }
+
+  .btn-secondary {
+    @apply btn bg-transparent border-2 border-gold text-gold hover:bg-gold hover:text-primary-black;
+  }
+
+  .btn-dark {
+    @apply btn bg-primary-black border-2 border-white text-white hover:bg-white hover:text-primary-black;
+  }
+
+  .container-max {
+    @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8;
+  }
+
+  .section-padding {
+    @apply py-20 md:py-section;
+  }
+
+  .gradient-gold {
+    @apply bg-gradient-to-r from-gold to-gold-light;
+  }
+
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-gold to-gold-light;
+  }
+
+  /* RTL Logical Properties */
+  .ms-auto {
+    @apply ml-auto;
+  }
+
+  [dir="rtl"] .ms-auto {
+    @apply ml-0 mr-auto;
+  }
+
+  .me-auto {
+    @apply mr-auto;
+  }
+
+  [dir="rtl"] .me-auto {
+    @apply mr-0 ml-auto;
+  }
+
+  .ps-4 {
+    @apply pl-4;
+  }
+
+  [dir="rtl"] .ps-4 {
+    @apply pl-0 pr-4;
+  }
+
+  .pe-4 {
+    @apply pr-4;
+  }
+
+  [dir="rtl"] .pe-4 {
+    @apply pr-0 pl-4;
+  }
+}
+
+/* Scrollbar RTL Support */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(11, 11, 11, 0.5);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(198, 167, 94, 0.5);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(198, 167, 94, 0.8);
+}
+
+.label-gold {
+  @apply block text-sm font-cairo font-semibold text-gold mb-2 text-right;
+}
+
+.input-gold {
+  @apply w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right;
+}

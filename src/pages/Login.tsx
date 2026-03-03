@@ -1,0 +1,110 @@
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { useAuth } from '@/hooks/useAuth'
+import { useLanguage } from '@/hooks/useLanguage'
+import Button from '@/components/ui/Button'
+import { toast } from 'sonner'
+
+export default function Login() {
+  const navigate = useNavigate()
+  const { login, isLoading, error } = useAuth()
+  const { isArabic } = useLanguage()
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+  })
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
+    }))
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    try {
+      await login(formData.email, formData.password)
+      toast.success(isArabic ? 'تم تسجيل الدخول بنجاح!' : 'Login successful!')
+      navigate(formData.email.includes('admin') ? '/admin/dashboard' : '/client/dashboard')
+    } catch (err) {
+      toast.error(error || (isArabic ? 'فشل تسجيل الدخول' : 'Login failed'))
+    }
+  }
+
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-charcoal via-primary-black to-charcoal pt-20" dir="rtl">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full max-w-md"
+      >
+        <div className="bg-charcoal p-8 rounded-lg border border-gold/20">
+          <h1 className="text-heading-2 text-gold text-center mb-8 font-cairo">
+            {isArabic ? 'تسجيل الدخول' : 'Login'}
+          </h1>
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <label className="block text-sm font-semibold text-gold mb-2 font-cairo">
+                {isArabic ? 'البريد الإلكتروني' : 'Email'}
+              </label>
+              <input
+                type="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
+                placeholder="admin@lawfirm.ar"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-2 font-cairo text-right">
+                {isArabic
+                  ? 'جرب: admin@lawfirm.ar أو client@lawfirm.ar'
+                  : 'Try: admin@lawfirm.ar or client@lawfirm.ar'}
+              </p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gold mb-2 font-cairo">
+                {isArabic ? 'كلمة المرور' : 'Password'}
+              </label>
+              <input
+                type="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
+                placeholder="••••••••"
+                required
+              />
+              <p className="text-xs text-gray-500 mt-2 font-cairo text-right">
+                {isArabic ? 'جرب: admin123 أو client123' : 'Try: admin123 or client123'}
+              </p>
+            </div>
+
+            {error && <p className="text-red-500 text-sm font-cairo text-right">{error}</p>}
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              isLoading={isLoading}
+              className="w-full font-cairo"
+            >
+              {isArabic ? 'دخول' : 'Sign In'}
+            </Button>
+          </form>
+
+          <p className="text-center text-gray-400 text-sm mt-6 font-cairo">
+            {isArabic ? 'بيانات الاختبار أعلاه' : 'Test credentials above'}
+          </p>
+        </div>
+      </motion.div>
+    </div>
+  )
+}
