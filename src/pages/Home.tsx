@@ -158,6 +158,8 @@ export default function Home() {
                   descriptionAr={service.descriptionAr}
                   descriptionEn={service.descriptionEn}
                   icon={service.icon}
+                  priceAr='8000'
+                  priceEn='8000'
                   features={service.features}
                   onClick={() => setSelectedService(service.id)}
                 />
