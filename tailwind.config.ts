@@ -32,11 +32,13 @@ const config: Config = {
 
     extend: {
       colors: {
-        "primary-black": "#0B0B0B",
-        "charcoal": "#111111",
-        "gold": "#C6A75E",
-        "gold-light": "#E8D4A8",
-        "gold-dark": "#A8893D",
+        // Brand palette
+        "primary-black": "#0B2A4A", // dark navy – main background
+        "charcoal": "#10263F", // support navy shade
+        "gold": "#B09A63", // primary gold
+        "gold-light": "#D2C18A",
+        "gold-dark": "#8C784D",
+        "ivory": "#F7F7F5", // secondary light background
       },
 
       fontFamily: {
@@ -71,7 +73,7 @@ const config: Config = {
 
       backgroundImage: {
         "gold-gradient":
-          "linear-gradient(135deg, #C6A75E 0%, #E8D4A8 50%, #A8893D 100%)",
+          "linear-gradient(135deg, #B09A63 0%, #D2C18A 50%, #8C784D 100%)",
       },
     },
   },

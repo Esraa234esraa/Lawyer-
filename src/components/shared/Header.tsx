@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useLanguage } from '@/hooks/useLanguage'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
+import Logo from '@/components/ui/Logo'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
@@ -30,9 +31,12 @@ export default function Header() {
           <Link to="/" onClick={() => setIsOpen(false)}>
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="font-cairo text-lg md:text-2xl font-bold text-gold"
+              className="flex items-center gap-3 font-cairo text-lg md:text-2xl font-bold text-gold"
             >
-              المحاماة و الاستشارات
+              <Logo variant="dark" className="w-16 h-16 md:w-[12rem] md:h-20 object-contain rounded-md" />
+              {/* <span className="hidden sm:inline">
+                {isArabic ? 'مكتب المحامية مريم بنت محمد' : 'Maryam bint Mohammed Law Office'}
+              </span> */}
             </motion.div>
           </Link>
 

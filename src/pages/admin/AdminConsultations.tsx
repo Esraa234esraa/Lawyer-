@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 
 export default function AdminConsultations() {
     const { isArabic } = useLanguage()
-    const { consultations, deleteConsultation, updateConsultationPayment, updateConsultation } =
+    const { consultations, deleteConsultation, updateConsultation } =
         useAdminStore()
 
     const handleDelete = (item: ConsultationBooking) => {

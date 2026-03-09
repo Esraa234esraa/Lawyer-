@@ -33,6 +33,54 @@ export default function Home() {
     },
   }
 
+  const headingTextAr = 'أهلاً بك في مكتبي القانوني'
+  const headingTextEn = 'Welcome to my law office'
+  const headingLetters = (isArabic ? headingTextAr : headingTextEn).split('')
+
+  const headingContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.04,
+        delayChildren: 0.2,
+      },
+    },
+  }
+
+  const headingLetter = {
+    hidden: { opacity: 0, y: 8 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.25 },
+    },
+  }
+
+  const nameTextAr = 'المحامية مريم بنت محمد'
+  const nameTextEn = 'Lawyer Maryam bint Mohammed'
+  const nameLetters = (isArabic ? nameTextAr : nameTextEn).split('')
+
+  const nameContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.05,
+        delayChildren: 0.4,
+      },
+    },
+  }
+
+  const nameLetter = {
+    hidden: { opacity: 0, y: 10 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.25 },
+    },
+  }
+
   return (
     <div dir="rtl">
       {/* Hero Section */}
@@ -58,14 +106,33 @@ export default function Home() {
             transition={{ duration: 1 }}
             className="text-center max-w-4xl mx-auto"
           >
+            {/* Animated H1 - حرف بحرف */}
             <motion.h1
               className="text-display font-cairo font-bold mb-6 text-gradient"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.2 }}
+              variants={headingContainer}
+              initial="hidden"
+              animate="visible"
             >
-              {isArabic ? 'التميز القانوني للمؤسسات الحديثة' : 'Premium Legal Excellence for Modern Business'}
+              {headingLetters.map((char, idx) => (
+                <motion.span key={idx} variants={headingLetter}>
+                  {char === ' ' ? '\u00A0' : char}
+                </motion.span>
+              ))}
             </motion.h1>
+
+            {/* Animated name - حرف بحرف */}
+            <motion.div
+              className="text-2xl md:text-3xl font-cairo font-bold text-gold mb-4"
+              variants={nameContainer}
+              initial="hidden"
+              animate="visible"
+            >
+              {nameLetters.map((char, idx) => (
+                <motion.span key={idx} variants={nameLetter}>
+                  {char === ' ' ? '\u00A0' : char}
+                </motion.span>
+              ))}
+            </motion.div>
 
             <motion.p
               className="text-lg text-gray-300 mb-8 font-cairo max-w-2xl mx-auto"
@@ -74,8 +141,8 @@ export default function Home() {
               transition={{ duration: 1, delay: 0.4 }}
             >
               {isArabic
-                ? 'نقدم خدمات قانونية متخصصة عالية الجودة للشركات والأفراد مع التزام تام بالشفافية والنزاهة'
-                : 'Providing specialized high-quality legal services for corporations and individuals with full commitment to transparency and integrity'}
+                ? 'يُعد مكتب المحامية مريم بنت محمد جهة قانونية متخصصة تقدم استشارات وحلولًا عملية تحمي حقوق الأفراد والشركات في القضايا، العقود، والتسجيل العقاري.'
+                : 'Maryam bint Mohammed Law Office is a specialized legal practice providing practical, rights-focused solutions for individuals and businesses in disputes, contracts, and real-estate registration.'}
             </motion.p>
 
             <motion.div
@@ -158,6 +225,8 @@ export default function Home() {
                   descriptionAr={service.descriptionAr}
                   descriptionEn={service.descriptionEn}
                   icon={service.icon}
+                  priceAr='8000'
+                  priceEn='8000'
                   features={service.features}
                   onClick={() => setSelectedService(service.id)}
                 />
@@ -203,17 +272,17 @@ export default function Home() {
               className="text-right"
             >
               <h2 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">
-                {isArabic ? 'من نحن' : 'About Us'}
+              {isArabic ? 'عن مكتب المحامية مريم بنت محمد' : 'About Maryam bint Mohammed Law Office'}
               </h2>
               <p className="text-gray-300 font-cairo mb-4">
                 {isArabic
-                  ? 'نحن مكتب متخصص في تقديم الخدمات القانونية المتميزة مع أكثر من 20 سنة من الخبرة في مجال القانون'
-                  : 'We are a specialized law office providing premium legal services with over 20 years of experience'}
+                  ? 'يقدم مكتب المحامية مريم بنت محمد خدمات قانونية متميزة تستند إلى خبرة عملية ومعرفة عميقة بالأنظمة والإجراءات القضائية.'
+                  : 'Maryam bint Mohammed Law Office delivers distinguished legal services built on extensive practical experience and deep understanding of regulations and court procedures.'}
               </p>
               <p className="text-gray-300 font-cairo mb-6">
                 {isArabic
-                  ? 'فريقنا يتكون من محامين وخبراء قانونيين متخصصين في مختلف المجالات القانونية'
-                  : 'Our team consists of lawyers and legal experts specialized in various fields of law'}
+                  ? 'يضم المكتب فريقًا قانونيًا متخصصًا يدعم العملاء في إدارة القضايا، وصياغة ومراجعة العقود، وتقديم الاستشارات القانونية المتقدمة.'
+                  : 'The office is supported by a specialized legal team assisting clients in managing disputes, drafting and reviewing contracts, and providing advanced legal advice.'}
               </p>
               <Link to="/about">
                 <Button size="lg" variant="primary" className="font-cairo flex-row-reverse">
@@ -420,12 +489,12 @@ export default function Home() {
             transition={{ duration: 0.8 }}
           >
             <h2 className="text-heading-2 font-cairo font-bold mb-4 text-primary-black">
-              {isArabic ? 'هل أنت مستعد للبدء؟' : 'Ready to Get Started?'}
+              {isArabic ? 'ابدأ خطواتك القانونية بثقة مع مكتبنا' : 'Start your legal steps with confidence'}
             </h2>
             <p className="text-primary-black/80 mb-8 max-w-2xl mx-auto font-cairo">
               {isArabic
-                ? 'تواصل معنا اليوم لحجز استشارة مجانية مع أحد محاميينا المتخصصين'
-                : 'Contact us today to schedule a free consultation with one of our specialists'}
+                ? 'تواصل مع مكتب المحامية مريم بنت محمد لحجز استشارة قانونية مهنية تساعدك على اتخاذ قرارات واضحة ومبنية على أسس نظامية.'
+                : 'Contact Maryam bint Mohammed Law Office to book a professional legal consultation that helps you make clear, well‑grounded decisions.'}
             </p>
             <Link to="/contact">
               <Button

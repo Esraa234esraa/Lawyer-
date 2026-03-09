@@ -22,6 +22,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useAuth } from '@/hooks/useAuth'
 import { useSwipe } from '@/hooks/useSwipe'
 import { useSidebarStore } from '@/store/useSidebarStore' // Zustand store
+import Logo from '@/components/ui/Logo'
 
 export default function AdminSidebar() {
   const location = useLocation()
@@ -116,6 +117,23 @@ export default function AdminSidebar() {
 
           <div className="my-4 border-t border-gold/20" />
 
+          {/* Brand signature - شعار رقم 1 (خلفية كحلي) */}
+          <div className="px-4 pb-4">
+            <div className="flex items-center gap-3 flex-row-reverse">
+              <Logo variant="dark" className="w-10 h-10 rounded-full object-contain border border-gold/50 bg-primary-black" />
+              {!collapsed && (
+                <div className="text-right">
+                  <p className="text-gold text-sm font-cairo font-semibold">
+                    مكتب مريم بنت محمد
+                  </p>
+                  <p className="text-[11px] text-gray-500 font-cairo">
+                    للمحاماة والاستشارات القانونية
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Logout */}
           <motion.button
             whileHover={{ scale: 1.05 }}
@@ -189,6 +207,21 @@ export default function AdminSidebar() {
                 </div>
 
                 <div className="my-4 border-t border-gold/20" />
+
+                {/* Brand signature – mobile (شعار رقم 1) */}
+                <div className="pb-4">
+                  <div className="flex items-center gap-3 flex-row-reverse">
+                    <Logo variant="dark" className="w-10 h-10 rounded-full object-contain border border-gold/50 bg-primary-black" />
+                    <div className="text-right">
+                      <p className="text-gold text-sm font-cairo font-semibold">
+                        مكتب مريم بنت محمد
+                      </p>
+                      <p className="text-[11px] text-gray-500 font-cairo">
+                        للمحاماة والاستشارات القانونية
+                      </p>
+                    </div>
+                  </div>
+                </div>
 
                 <motion.button
                   whileHover={{ scale: 1.02 }}

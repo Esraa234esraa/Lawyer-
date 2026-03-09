@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { Mail, Phone, MapPin } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useLanguage } from '@/hooks/useLanguage'
+import Logo from '@/components/ui/Logo'
 
 export default function Footer() {
   const currentYear = new Date().getFullYear()
@@ -29,11 +30,14 @@ export default function Footer() {
             transition={{ duration: 0.6 }}
             className="text-right"
           >
-            <h3 className="font-cairo text-xl font-bold text-gold mb-4">
-              المحاماة و الاستشارات
-            </h3>
+            <div className="flex flex-col items-center justify-end gap-4 mb-4">
+              <Logo variant="dark" className=" h-26 object-contain rounded-md" />
+              <h3 className="font-cairo text-xl font-bold text-gold">
+                مكتب مريم بنت محمد
+              </h3>
+            </div>
             <p className="text-gray-400 text-sm font-cairo">
-              تقديم خدمات قانونية عالية الجودة مع التزام تام بالشفافية والنزاهة
+              للمحاماة والاستشارات القانونية بخبرة واحترافية عالية
             </p>
           </motion.div>
 
@@ -110,7 +114,7 @@ export default function Footer() {
         <div className="border-t border-gold/20 pt-8">
           <div className="flex flex-col md:flex-row justify-between items-center text-center md:text-right">
             <p className="text-gray-500 text-sm font-cairo">
-              © {currentYear} المحاماة و الاستشارات. جميع الحقوق محفوظة.
+              © {currentYear} مكتب مريم بنت محمد للمحاماة والاستشارات القانونية. جميع الحقوق محفوظة.
             </p>
             <div className="flex gap-6 mt-4 md:mt-0">
               <Link
