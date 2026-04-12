@@ -6,12 +6,12 @@ import PageTransition from '@/components/ui/PageTransition'
 
 export default function PublicLayout() {
   return (
-    <div className="flex flex-col min-h-screen bg-charcoal" dir="rtl">
+    <div className="flex flex-col min-h-screen bg-charcoal text-right" dir="rtl">
       <Header />
-      <main className="flex-1 pt-16 md:pt-20">
+      <main className="flex-1 pt-16 md:pt-20  text-right">
         <AnimatePresence mode="wait">
           <PageTransition>
-            <Outlet />
+            <Outlet  />
           </PageTransition>
         </AnimatePresence>
       </main>

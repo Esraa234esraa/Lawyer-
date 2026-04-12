@@ -10,16 +10,14 @@ interface LanguageState {
 export const useLanguageStore = create<LanguageState>((set) => ({
   language: 'ar',
   setLanguage: (lang) => {
-    set({ language: lang })
-    document.documentElement.lang = lang
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
+    const forcedLang: Language = 'ar'
+    set({ language: forcedLang })
+    document.documentElement.lang = forcedLang
+    document.documentElement.dir = 'rtl'
   },
   toggleLanguage: () => {
-    set((state) => {
-      const newLang = state.language === 'ar' ? 'en' : 'ar'
-      document.documentElement.lang = newLang
-      document.documentElement.dir = newLang === 'ar' ? 'rtl' : 'ltr'
-      return { language: newLang }
-    })
+    set({ language: 'ar' })
+    document.documentElement.lang = 'ar'
+    document.documentElement.dir = 'rtl'
   },
 }))

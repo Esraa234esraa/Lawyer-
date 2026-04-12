@@ -6,11 +6,13 @@ import ServiceCard from '@/components/ui/ServiceCard'
 import NewsCard from '@/components/ui/NewsCard'
 // import TestimonialCard from '@/components/ui/TestimonialCard'
 import { useLanguage } from '@/hooks/useLanguage'
-import { servicesData, newsData, statsData } from '@/data/mockData'
+import { newsData, statsData } from '@/data/mockData'
+import { useAdminStore } from '@/store/adminStore'
 import { Link } from 'react-router-dom'
 
 export default function Home() {
   const { isArabic } = useLanguage()
+  const { services } = useAdminStore()
   const [_selectedService, setSelectedService] = useState<number | null>(null)
 
   const containerVariants = {
@@ -84,7 +86,7 @@ export default function Home() {
   return (
     <div dir="rtl">
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
+      <section className="relative min-h-screen  flex items-center justify-center overflow-hidden pt-20">
         {/* Background Image */}
         <div
           className="absolute inset-0 z-0 opacity-20"
@@ -108,7 +110,7 @@ export default function Home() {
           >
             {/* Animated H1 - حرف بحرف */}
             <motion.h1
-              className="text-display font-cairo font-bold mb-6 text-gradient"
+              className="text-display font-cairo font-bold mb-6 text-gradient pb-6"
               variants={headingContainer}
               initial="hidden"
               animate="visible"
@@ -217,16 +219,16 @@ export default function Home() {
             whileInView="visible"
             viewport={{ once: true }}
           >
-            {servicesData.map((service) => (
+            {services.map((service) => (
               <motion.div key={service.id} variants={itemVariants}>
                 <ServiceCard
                   titleAr={service.titleAr}
-                  titleEn={service.titleEn}
+                  titleEn={service.titleEn || service.titleAr}
                   descriptionAr={service.descriptionAr}
-                  descriptionEn={service.descriptionEn}
+                  descriptionEn={service.descriptionEn || service.descriptionAr}
                   icon={service.icon}
-                  priceAr='8000'
-                  priceEn='8000'
+                  priceAr={service.priceAr}
+                  priceEn={service.priceEn || service.priceAr}
                   features={service.features}
                   onClick={() => setSelectedService(service.id)}
                 />

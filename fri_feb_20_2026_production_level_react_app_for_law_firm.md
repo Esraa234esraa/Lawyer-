@@ -1456,7 +1456,7 @@ export default function AdminDashboard() {
           {[
             { label: 'Total Clients', value: '124', change: '+12%' },
             { label: 'Active Cases', value: '48', change: '+5%' },
-            { label: 'Revenue', value: '$98K', change: '+23%' },
+            { label: 'Revenue', value: '400K SAR', change: '+23%' },
           ].map((stat, index) => (
             <motion.div
               key={index}

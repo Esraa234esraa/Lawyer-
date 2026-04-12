@@ -3,58 +3,53 @@ import { useLanguage } from "@/hooks/useLanguage"
 import CaseCard from "@/components/ui/CaseCard"
 import { useState, useMemo } from "react"
 import { useNavigate } from "react-router-dom"
+import { useAdminStore } from "@/store/adminStore"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function ClientCases() {
   const { isArabic } = useLanguage()
   const navigate = useNavigate()
+  const { user } = useAuth()
+  const { cases, caseTypes, clients } = useAdminStore()
 
   const [search, setSearch] = useState("")
   const [filter, setFilter] = useState("all")
   const [loading, _setLoading] = useState(false)
 
-  const cases = [
-    {
-      id: 1,
-      titleAr: "قضية نزاع عقاري",
-      titleEn: "Real Estate Dispute",
-      descriptionAr: "نزاع حول ملكية أرض.",
-      descriptionEn: "Land ownership dispute.",
-      typeAr: "عقاري",
-      typeEn: "Real Estate",
-      yearAr: "2024",
-      yearEn: "2024",
-      image: "/images/case1.jpg",
-      files: [],
-    },
-    {
-      id: 2,
-      titleAr: "قضية تجارية",
-      titleEn: "Commercial Case",
-      descriptionAr: "نزاع متعلق بعقد تجاري.",
-      descriptionEn: "Dispute regarding commercial contract.",
-      typeAr: "تجاري",
-      typeEn: "Commercial",
-      yearAr: "2023",
-      yearEn: "2023",
-      image: "/images/case2.jpg",
-      files: [],
-    },
-  ]
+  const linkedClientId = useMemo(() => {
+    const linkedClient = clients.find((client) => client.email === user?.email)
+    if (linkedClient) return linkedClient.id
+    if (user?.email === "client@lawfirm.ar") return 2
+    return null
+  }, [clients, user?.email])
+
+  const relatedCases = useMemo(() => {
+    if (!linkedClientId) return []
+    return cases.filter((caseItem) => caseItem.clientId === linkedClientId)
+  }, [cases, linkedClientId])
 
   // 🎯 Filter + Search Logic
   const filteredCases = useMemo(() => {
-    return cases.filter((c) => {
-      const matchesSearch = (isArabic ? c.titleAr : c.titleEn)
+    return relatedCases.filter((c) => {
+      const caseTypeName = caseTypes.find((type) => type.id === c.typeArId)?.nameAr || "غير محدد"
+      const matchesSearch = c.titleAr
         .toLowerCase()
         .includes(search.toLowerCase())
 
       const matchesFilter =
         filter === "all" ||
-        (isArabic ? c.typeAr : c.typeEn) === filter
+        caseTypeName === filter
 
       return matchesSearch && matchesFilter
     })
-  }, [search, filter, isArabic])
+  }, [search, filter, relatedCases, caseTypes])
+
+  const caseTypeOptions = useMemo(() => {
+    const uniqueTypeIds = Array.from(new Set(relatedCases.map((caseItem) => caseItem.typeArId)))
+    return uniqueTypeIds
+      .map((typeId) => caseTypes.find((type) => type.id === typeId)?.nameAr)
+      .filter((name): name is string => Boolean(name))
+  }, [relatedCases, caseTypes])
 
   const container = {
     hidden: {},
@@ -97,14 +92,19 @@ export default function ClientCases() {
           <option value="all">
             {isArabic ? "كل الأنواع" : "All Types"}
           </option>
-          <option value={isArabic ? "عقاري" : "Real Estate"}>
-            {isArabic ? "عقاري" : "Real Estate"}
-          </option>
-          <option value={isArabic ? "تجاري" : "Commercial"}>
-            {isArabic ? "تجاري" : "Commercial"}
-          </option>
+          {caseTypeOptions.map((typeName) => (
+            <option key={typeName} value={typeName}>
+              {typeName}
+            </option>
+          ))}
         </select>
       </div>
+
+      {!linkedClientId && (
+        <div className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-3 text-amber-200 font-cairo">
+          {isArabic ? "لا يوجد ملف عميل مرتبط بحسابك حالياً. يرجى التواصل مع الإدارة لربط القضايا بحسابك." : "No client profile is linked to your account yet."}
+        </div>
+      )}
 
       {/* Loading Skeleton */}
       {loading ? (
@@ -125,10 +125,23 @@ export default function ClientCases() {
           animate="show"
           className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
         >
+          {filteredCases.length === 0 && (
+            <div className="md:col-span-2 lg:col-span-3 rounded-xl border border-gold/20 bg-charcoal/40 px-6 py-10 text-center text-gray-300 font-cairo">
+              {isArabic ? "لا توجد قضايا مرتبطة بهذا العميل حالياً" : "No cases are linked to this client yet"}
+            </div>
+          )}
           {filteredCases.map((caseItem) => (
             <motion.div key={caseItem.id} variants={item}>
               <CaseCard
-                {...caseItem}
+                titleAr={caseItem.titleAr}
+                titleEn={caseItem.titleAr}
+                descriptionAr={caseItem.descriptionAr}
+                descriptionEn={caseItem.descriptionAr}
+                typeAr={caseTypes.find((type) => type.id === caseItem.typeArId)?.nameAr || "غير محدد"}
+                typeEn={caseTypes.find((type) => type.id === caseItem.typeArId)?.nameAr || "غير محدد"}
+                yearAr={caseItem.yearAr}
+                yearEn={caseItem.yearAr}
+                image={caseItem.image}
                 onClick={() => navigate(`/case/${caseItem.id}`)}
               />
             </motion.div>

@@ -82,27 +82,48 @@ export const jobsData = [
 export interface Service {
   id: number
   titleAr: string
-  titleEn: string
+  titleEn?: string
   descriptionAr: string
-  descriptionEn: string
+  descriptionEn?: string
+  priceAr: string
+  priceEn?: string
   icon: string
   features: string[]
   image: string
 }
 
+export interface CaseType {
+  id: number
+  nameAr: string
+}
+
+export interface CaseStatus {
+  id: number
+  nameAr: string
+}
+
+export interface CaseAttachment {
+  id: string
+  nameAr: string
+  fileName: string
+  fileSize: number
+  uploadedAt: string
+  dataUrl?: string
+  fileType?: string
+}
+
 export interface Case {
   id: number
   titleAr: string
-  titleEn: string
   descriptionAr: string
-  descriptionEn: string
-  typeAr: string
-  typeEn: string
+  plaintiffAr: string
+  defendantAr: string
+  clientId: number
+  typeArId: number
   yearAr: string
-  yearEn: string
-  outcome: string
-  outcomeEn: string
+  statusAr: 'لم تبدأ' | 'قيد العمل' | 'عاجلة' | 'مغلقة' | 'منتهية'
   image: string
+  attachments: CaseAttachment[]
 }
 
 export interface News {
@@ -184,7 +205,20 @@ export interface ConsultationBooking {
   name: string
   email: string
   phone: string
+  consultationName?: string
+  paidAmountSar?: number
   service: string
+  nationalAddress?: string
+  nationalId?: string
+  paymentReceiptName?: string
+  paymentReceiptDataUrl?: string
+  paymentReceiptType?: string
+  caseAttachments?: string[]
+  caseAttachmentFiles?: Array<{
+    name: string
+    dataUrl: string
+    type?: string
+  }>
   details: string
   attachment?: string
 
@@ -203,6 +237,11 @@ interface AdminState {
   addService: (service: Omit<Service, 'id'>) => void
   updateService: (id: number, service: Partial<Service>) => void
   deleteService: (id: number) => void
+
+  caseTypes: CaseType[]
+  addCaseType: (caseType: Omit<CaseType, 'id'>) => void
+  updateCaseType: (id: number, caseType: Partial<CaseType>) => void
+  deleteCaseType: (id: number) => void
 
   cases: Case[]
   addCase: (caseItem: Omit<Case, 'id'>) => void
@@ -247,7 +286,11 @@ interface AdminState {
       | 'createdAt'
       | 'paymentStatus'
       | 'paymentDate'
-    >
+    > & {
+      paymentStatus?: ConsultationBooking['paymentStatus']
+      paymentMethod?: string
+      paymentReference?: string
+    }
   ) => void
   updateConsultation: (id: number, data: Partial<ConsultationBooking>) => void
   updateConsultationStatus: (
@@ -278,6 +321,18 @@ export const useAdminStore = create<AdminState>()(
         updateService: (id, service) => set((state) => ({ services: state.services.map(s => s.id === id ? { ...s, ...service } : s) })),
         deleteService: (id) => set((state) => ({ services: state.services.filter(s => s.id !== id) })),
 
+        caseTypes: [
+          { id: 1, nameAr: 'نزاعات تجارية' },
+          { id: 2, nameAr: 'الملكية الفكرية' },
+          { id: 3, nameAr: 'قانون العمل' },
+          { id: 4, nameAr: 'القانون العقاري' },
+          { id: 5, nameAr: 'المنازعات والتقاضي' },
+          { id: 6, nameAr: 'الاستشارات القانونية' },
+        ],
+        addCaseType: (caseType) => set((state) => ({ caseTypes: [...state.caseTypes, { ...caseType, id: generateId() }] })),
+        updateCaseType: (id, caseType) => set((state) => ({ caseTypes: state.caseTypes.map(c => c.id === id ? { ...c, ...caseType } : c) })),
+        deleteCaseType: (id) => set((state) => ({ caseTypes: state.caseTypes.filter(c => c.id !== id) })),
+
         cases: casesData,
         addCase: (caseItem) => set((state) => ({ cases: [...state.cases, { ...caseItem, id: generateId() }] })),
         updateCase: (id, caseItem) => set((state) => ({ cases: state.cases.map(c => c.id === id ? { ...c, ...caseItem } : c) })),
@@ -301,7 +356,19 @@ export const useAdminStore = create<AdminState>()(
         aboutData,
         updateAbout: (data) => set((state) => ({ aboutData: { ...state.aboutData, ...data } })),
 
-        clients: [],
+        clients: [
+          {
+            id: 2,
+            nameAr: 'أحمد محمد',
+            nameEn: 'Ahmed Mohammed',
+            email: 'client@lawfirm.ar',
+            phone: '0500000000',
+            caseType: 'نزاعات تجارية',
+            status: 'active',
+            joinDate: '2026-01-01',
+            avatar: 'https://api.dicebear.com/7.x/avataaars/svg?seed=client',
+          },
+        ],
         addClient: (client) => set((state) => ({ clients: [...state.clients, { ...client, id: generateId() }] })),
         updateClient: (id, client) => set((state) => ({ clients: state.clients.map(c => c.id === id ? { ...c, ...client } : c) })),
         deleteClient: (id) => set((state) => ({ clients: state.clients.filter(c => c.id !== id) })),
@@ -321,7 +388,9 @@ export const useAdminStore = create<AdminState>()(
                 ...data,
                 id: generateId(),
                 status: 'new',
-                paymentStatus: 'pending',
+                paymentStatus: data.paymentStatus ?? 'pending',
+                paymentMethod: data.paymentMethod,
+                paymentReference: data.paymentReference,
                 createdAt: new Date().toISOString(),
               },
             ],

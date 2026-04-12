@@ -54,6 +54,7 @@ export default function AdminSidebar() {
     { labelAr: 'إدارة الأخبار', labelEn: 'News', href: '/admin/news', icon: FileText },
     { labelAr: 'ملفات العملاء', labelEn: 'Clients Files', href: '/admin/clients-files', icon: Files },
     { labelAr: 'إدارة العملاء', labelEn: 'Manage Clients', href: '/admin/clients', icon: Users },
+    { labelAr: 'أنواع القضايا', labelEn: 'Case Types', href: '/admin/case-types', icon: Briefcase },
     { labelAr: 'طلبات التدريب', labelEn: 'Internships', href: '/admin/internships', icon: GraduationCap },
     { labelAr: 'الفرص الوظيفية', labelEn: 'Opportunities', href: '/admin/opportunities', icon: Briefcase },
     { labelAr: 'تحليل القضايا',  labelEn: 'Cases Analysis',href: '/admin/cases-analysis',icon:BarChart2 },
@@ -78,7 +79,7 @@ export default function AdminSidebar() {
         initial={false}
         animate={{ width: collapsed ? 80 : 256 }}
         transition={{ duration: 0.3 }}
-        className="hidden lg:block fixed right-0 top-20 h-screen bg-primary-black border-l border-gold/20 overflow-y-auto backdrop-blur-lg bg-opacity-95 z-30"
+        className="hidden lg:block fixed right-0 top-20 h-screen bg-primary-black border-l border-gold/20 overflow-y-auto backdrop-blur-lg bg-opacity-95 z-999999"
         dir="rtl"
       >
         <nav className="p-4 space-y-2 h-full flex flex-col">
@@ -87,9 +88,9 @@ export default function AdminSidebar() {
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.95 }}
             onClick={toggle}
-            className="p-3 rounded-lg hover:bg-gold/10 transition-colors self-start mb-4"
+            className="p-3 rounded-lg hover:bg-gold/10 transition-colors ms-auto mb-4"
           >
-            {collapsed ? <ChevronLeft size={20} className="text-gold" /> : <ChevronRight size={20} className="text-gold" />}
+            {collapsed ? <ChevronRight size={20} className="text-gold" /> : <ChevronLeft size={20} className="text-gold" />}
           </motion.button>
 
           {/* Menu Items */}
@@ -100,15 +101,15 @@ export default function AdminSidebar() {
               return (
                 <Link key={item.href} to={item.href}>
                   <motion.div
-                    whileHover={{ x: collapsed ? 0 : -4 }}
-                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-cairo flex-row-reverse ${isActive
-                      ? 'bg-gradient-to-r from-gold/30 to-gold/10 text-gold border-r-2 border-gold shadow-lg'
+                    whileHover={{ x: collapsed ? 0 : 4 }}
+                    className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-cairo ${isActive
+                      ? 'bg-gradient-to-l from-gold/30 to-gold/10 text-gold border-s-2 border-gold shadow-lg'
                       : 'text-gray-400 hover:text-gold hover:bg-gold/10'
                       }`}
                     title={collapsed ? (isArabic ? item.labelAr : item.labelEn) : ''}
                   >
-                    <Icon size={20} />
                     {!collapsed && <span className="font-medium text-sm truncate">{isArabic ? item.labelAr : item.labelEn}</span>}
+                    <Icon size={20} className="ms-auto" />
                   </motion.div>
                 </Link>
               )

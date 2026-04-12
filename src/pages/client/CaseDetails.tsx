@@ -1,38 +1,61 @@
 import { useParams, useNavigate } from "react-router-dom"
 import { useLanguage } from "@/hooks/useLanguage"
 import { motion } from "framer-motion"
+import { useAdminStore } from "@/store/adminStore"
 
 export default function CaseDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { isArabic } = useLanguage()
+  const { cases, caseTypes, clients } = useAdminStore()
 
-  // ⚠️ مؤقتاً بيانات ثابتة – بعدين تجيبيها من API حسب الـ id
-  const caseData = {
-    id,
-    titleAr: "قضية نزاع عقاري",
-    titleEn: "Real Estate Dispute",
-    descriptionAr:
-      "نزاع قانوني بين طرفين حول ملكية قطعة أرض في منطقة سكنية، وتشمل القضية مستندات ملكية وتقارير خبراء.",
-    descriptionEn:
-      "A legal dispute between two parties regarding ownership of residential land, including ownership documents and expert reports.",
-    typeAr: "عقاري",
-    typeEn: "Real Estate",
-    yearAr: "2024",
-    yearEn: "2024",
-    statusAr: "قيد المراجعة",
-    statusEn: "Under Review",
-    image: "/images/case1.jpg",
-    files: [
-      { name: "عقد الملكية.pdf", url: "/files/contract.pdf" },
-      { name: "تقرير الخبير.pdf", url: "/files/report.pdf" },
-    ],
+  const caseId = Number(id)
+  const caseData = cases.find((item) => item.id === caseId)
+  const caseTypeName = caseData ? (caseTypes.find((type) => type.id === caseData.typeArId)?.nameAr || "غير محدد") : ""
+  const clientName = caseData ? (clients.find((client) => client.id === caseData.clientId)?.nameAr || "غير محدد") : ""
+
+  const handleOpenAttachment = (url?: string) => {
+    if (!url) return
+    window.open(url, '_blank', 'noopener,noreferrer')
+  }
+
+  const handleDownloadAttachment = (url: string | undefined, fileName: string) => {
+    if (!url) return
+    const link = document.createElement('a')
+    link.href = url
+    link.download = fileName
+    link.target = '_blank'
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  if (!caseData) {
+    return (
+      <div dir={isArabic ? "rtl" : "ltr"} className="space-y-6">
+        <button
+          onClick={() => navigate(-1)}
+          className="text-gold hover:underline font-cairo"
+        >
+          {isArabic ? "← رجوع" : "← Back"}
+        </button>
+        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-red-200 font-cairo">
+          {isArabic ? "القضية غير موجودة أو تم حذفها." : "Case not found or deleted."}
+        </div>
+      </div>
+    )
   }
 
   const statusColor =
-    caseData.statusEn === "Under Review"
-      ? "bg-yellow-500/20 text-yellow-400 border-yellow-400/30"
-      : "bg-green-500/20 text-green-400 border-green-400/30"
+    caseData.statusAr === "قيد العمل"
+      ? "bg-blue-500/20 text-blue-300 border-blue-400/30"
+      : caseData.statusAr === "عاجلة"
+      ? "bg-red-500/20 text-red-300 border-red-400/30"
+      : caseData.statusAr === "مغلقة"
+      ? "bg-purple-500/20 text-purple-300 border-purple-400/30"
+      : caseData.statusAr === "منتهية"
+      ? "bg-green-500/20 text-green-300 border-green-400/30"
+      : "bg-gray-500/20 text-gray-300 border-gray-400/30"
 
   return (
     <motion.div
@@ -52,14 +75,14 @@ export default function CaseDetails() {
 
       {/* Title */}
       <h1 className="text-heading-1 text-gold font-cairo">
-        {isArabic ? caseData.titleAr : caseData.titleEn}
+        {caseData.titleAr}
       </h1>
 
       {/* Image */}
       <div className="rounded-xl overflow-hidden border border-gold/20">
         <img
           src={caseData.image}
-          alt={isArabic ? caseData.titleAr : caseData.titleEn}
+          alt={caseData.titleAr}
           className="w-full h-72 object-cover"
         />
       </div>
@@ -70,17 +93,21 @@ export default function CaseDetails() {
         {/* Type + Year */}
         <div className="flex flex-wrap gap-4">
           <span className="bg-gold/20 text-gold px-4 py-2 rounded-full text-sm">
-            {isArabic ? caseData.yearAr : caseData.yearEn}
+            {caseData.yearAr}
           </span>
 
           <span className="border border-gold/30 text-gold px-4 py-2 rounded-full text-sm">
-            {isArabic ? caseData.typeAr : caseData.typeEn}
+            {caseTypeName}
+          </span>
+
+          <span className="border border-gold/30 text-gold px-4 py-2 rounded-full text-sm">
+            {isArabic ? `العميل: ${clientName}` : `Client: ${clientName}`}
           </span>
 
           <span
             className={`border px-4 py-2 rounded-full text-sm ${statusColor}`}
           >
-            {isArabic ? caseData.statusAr : caseData.statusEn}
+            {caseData.statusAr}
           </span>
         </div>
 
@@ -91,33 +118,50 @@ export default function CaseDetails() {
           </h2>
 
           <p className="text-gray-300 leading-relaxed font-cairo">
-            {isArabic
-              ? caseData.descriptionAr
-              : caseData.descriptionEn}
+            {caseData.descriptionAr}
           </p>
         </div>
 
         {/* Files */}
-        {caseData.files.length > 0 && (
+        {caseData.attachments.length > 0 && (
           <div>
             <h2 className="text-gold mb-4 font-cairo">
-              {isArabic ? "ملفات القضية" : "Case Files"}
+              {isArabic ? "مرفقات القضية" : "Case Attachments"}
             </h2>
 
             <div className="space-y-3">
-              {caseData.files.map((file, index) => (
-                <a
-                  key={index}
-                  href={file.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex justify-between items-center bg-primary-black border border-gold/10 hover:border-gold/40 rounded-lg px-4 py-3 transition"
+              {caseData.attachments.map((file) => (
+                <div
+                  key={file.id}
+                  className="flex flex-wrap justify-between items-center gap-3 bg-primary-black border border-gold/10 hover:border-gold/40 rounded-lg px-4 py-3 transition"
                 >
-                  <span className="text-gray-300">{file.name}</span>
-                  <span className="text-gold text-sm">
-                    {isArabic ? "تحميل" : "Download"}
-                  </span>
-                </a>
+                  <div className="space-y-1">
+                    <p className="text-gray-200 font-cairo">{file.nameAr}</p>
+                    <p className="text-xs text-gray-400">{file.fileName}</p>
+                    <p className="text-xs text-gray-500">
+                      {(file.fileSize / 1024).toFixed(2)} KB - {file.uploadedAt}
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenAttachment(file.dataUrl)}
+                      disabled={!file.dataUrl}
+                      className="px-2 py-1 rounded-md bg-gold/15 text-gold text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {isArabic ? "فتح" : "Open"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadAttachment(file.dataUrl, file.fileName)}
+                      disabled={!file.dataUrl}
+                      className="px-2 py-1 rounded-md bg-blue-500/15 text-blue-300 text-xs disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      {isArabic ? "تحميل" : "Download"}
+                    </button>
+                  </div>
+                </div>
               ))}
             </div>
           </div>

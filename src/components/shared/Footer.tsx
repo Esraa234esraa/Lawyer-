@@ -31,7 +31,7 @@ export default function Footer() {
             className="text-right"
           >
             <div className="flex flex-col items-center justify-end gap-4 mb-4">
-              <Logo variant="dark" className=" h-26 object-contain rounded-md" />
+              <Logo variant="dark" className=" h-36 object-contain rounded-md" />
               <h3 className="font-cairo text-xl font-bold text-gold">
                 مكتب مريم بنت محمد
               </h3>

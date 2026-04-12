@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
-import { Upload, X } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, ArrowRight, Check, Upload, X, XCircle } from 'lucide-react'
+import { useLocation, useNavigate } from 'react-router-dom'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
 import { toast } from 'sonner'
@@ -13,57 +13,281 @@ interface ConsultationBookingFormProps {
 export default function ConsultationBookingForm({ onClose }: ConsultationBookingFormProps) {
   const { isArabic } = useLanguage()
   const navigate = useNavigate()
-  const { addConsultation } = useAdminStore()
+  const location = useLocation()
+  const { addConsultation, services } = useAdminStore()
+  const pageSpacing = onClose ? '' : 'mt-20 md:mt-28'
+
+  const steps = [
+    { id: 1, titleAr: 'الدفع', titleEn: 'Payment' },
+    { id: 2, titleAr: 'إيصال الدفع', titleEn: 'Receipt Upload' },
+    { id: 3, titleAr: 'بيانات الدعوى', titleEn: 'Case Details' },
+    { id: 4, titleAr: 'المرفقات ونص الشكوى', titleEn: 'Attachments & Complaint' },
+  ]
+
+  const consultationOptions = services.map((service) => ({
+    key: String(service.id),
+    nameAr: service.titleAr,
+    nameEn: service.titleEn || service.titleAr,
+    amountSar: Number(service.priceAr.replace(/[^0-9]/g, '')) || 750,
+  }))
 
   const [formData, setFormData] = useState({
     name: '',
     email: '',
     phone: '',
+    consultationKey: '',
     service: '',
+    nationalAddress: '',
+    nationalId: '',
     details: '',
-    attachment: null as File | null,
   })
 
+  const [currentStep, setCurrentStep] = useState(1)
+  const [receiptFile, setReceiptFile] = useState<File | null>(null)
+  const [receiptPreview, setReceiptPreview] = useState<string>('')
+  const [caseFiles, setCaseFiles] = useState<File[]>([])
+  const [paymentCompleted, setPaymentCompleted] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+
   const [isLoading, setIsLoading] = useState(false)
+
+  useEffect(() => {
+    const state = location.state as {
+      serviceId?: number
+      serviceNameAr?: string
+      serviceNameEn?: string
+      servicePriceSar?: number
+    } | null
+
+    const queryServiceId = new URLSearchParams(location.search).get('service')
+    const serviceIdFromState = state?.serviceId
+    const serviceId = serviceIdFromState || (queryServiceId ? Number(queryServiceId) : undefined)
+
+    if (!serviceId) return
+
+    const matchedOption = consultationOptions.find((option) => option.key === String(serviceId))
+    if (!matchedOption) return
+
+    setFormData((prev) => ({
+      ...prev,
+      consultationKey: matchedOption.key,
+      service:
+        prev.service ||
+        (isArabic
+          ? state?.serviceNameAr || matchedOption.nameAr
+          : state?.serviceNameEn || matchedOption.nameEn),
+    }))
+  }, [consultationOptions, isArabic, location.search, location.state])
+
+  const fileToDataUrl = (file: File) =>
+    new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => {
+        if (typeof reader.result === 'string') {
+          resolve(reader.result)
+          return
+        }
+        reject(new Error('Invalid file data'))
+      }
+      reader.onerror = () => reject(reader.error || new Error('Failed to read file'))
+      reader.readAsDataURL(file)
+    })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
     setFormData((prev) => ({ ...prev, [name]: value }))
   }
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleReceiptChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (file) {
-      setFormData((prev) => ({ ...prev, attachment: file }))
+      setReceiptFile(file)
+      const reader = new FileReader()
+      reader.onload = () => {
+        setReceiptPreview(typeof reader.result === 'string' ? reader.result : '')
+      }
+      reader.readAsDataURL(file)
       toast.success(isArabic ? `تم تحميل: ${file.name}` : `Uploaded: ${file.name}`)
     }
+  }
+
+  const handleCaseFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    if (!files.length) return
+
+    const totalFiles = caseFiles.length + files.length
+    if (totalFiles > 10) {
+      toast.error(isArabic ? 'الحد الأقصى 10 ملفات' : 'Maximum 10 files allowed')
+      return
+    }
+
+    setCaseFiles((prev) => [...prev, ...files])
+  }
+
+  const removeCaseFile = (index: number) => {
+    setCaseFiles((prev) => prev.filter((_, fileIndex) => fileIndex !== index))
+  }
+
+  const validateStep = (step: number) => {
+    if (step === 1) {
+      return true
+    }
+
+    if (step === 2) {
+      if (!paymentCompleted) {
+        toast.error(isArabic ? 'يرجى إتمام الدفع أولاً' : 'Please complete payment first')
+        return false
+      }
+
+      if (!receiptFile) {
+        toast.error(isArabic ? 'يرجى رفع صورة الإيصال' : 'Please upload the payment receipt')
+        return false
+      }
+
+      return true
+    }
+
+    if (step === 3) {
+      if (!formData.name || !formData.email || !formData.phone || !formData.nationalAddress || !formData.nationalId || !formData.service) {
+        toast.error(isArabic ? 'يرجى استكمال بيانات الدعوى المطلوبة' : 'Please complete the required case details')
+        return false
+      }
+
+      return true
+    }
+
+    if (step === 4) {
+      if (!formData.details.trim()) {
+        toast.error(isArabic ? 'يرجى كتابة نص الشكوى' : 'Please enter the complaint text')
+        return false
+      }
+
+      if (caseFiles.length < 2) {
+        toast.error(isArabic ? 'الحد الأدنى ملفين لمرفقات الدعوى' : 'At least 2 case files are required')
+        return false
+      }
+
+      if (caseFiles.length > 10) {
+        toast.error(isArabic ? 'الحد الأقصى 10 ملفات' : 'Maximum 10 files allowed')
+        return false
+      }
+
+      return true
+    }
+
+    return false
+  }
+
+  const handleNext = () => {
+    if (!validateStep(currentStep)) return
+    setCurrentStep((prev) => Math.min(prev + 1, steps.length))
+  }
+
+  const handleBack = () => {
+    setCurrentStep((prev) => Math.max(prev - 1, 1))
+  }
+
+  const handleConfirmPayment = () => {
+    if (!formData.consultationKey) {
+      toast.error(isArabic ? 'يرجى اختيار نوع الاستشارة أولاً' : 'Please select the consultation type first')
+      return
+    }
+
+    setPaymentCompleted(true)
+    toast.success(isArabic ? 'تم تسجيل الدفع، انتقل لرفع الإيصال' : 'Payment recorded, continue to receipt upload')
+    setCurrentStep(2)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.name || !formData.email || !formData.phone) {
-      toast.error(isArabic ? 'يرجى ملء جميع الحقول المطلوبة' : 'Please fill all required fields')
+    if (currentStep < steps.length) {
+      handleNext()
       return
     }
 
+    if (!validateStep(4)) return
+
     setIsLoading(true)
 
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 1500))
 
-    toast.success(isArabic ? 'تم تسجيل بياناتك' : 'Your data has been recorded')
+      const caseAttachmentFiles = await Promise.all(
+        caseFiles.map(async (file) => ({
+          name: file.name,
+          type: file.type,
+          dataUrl: await fileToDataUrl(file),
+        }))
+      )
 
-    setIsLoading(false)
+      const selectedConsultation = consultationOptions.find((option) => option.key === formData.consultationKey)
 
-    addConsultation({
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      service: formData.service,
-      details: formData.details,
-      attachment: formData.attachment?.name,
-    })  
-      navigate('/payment')
+      addConsultation({
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        consultationName: selectedConsultation
+          ? isArabic
+            ? selectedConsultation.nameAr
+            : selectedConsultation.nameEn
+          : undefined,
+        paidAmountSar:
+          (location.state as { servicePriceSar?: number } | null)?.servicePriceSar ||
+          selectedConsultation?.amountSar ||
+          750,
+        service: formData.service,
+        details: formData.details,
+        attachment: receiptFile?.name,
+        nationalAddress: formData.nationalAddress,
+        nationalId: formData.nationalId,
+        paymentReceiptName: receiptFile?.name,
+        paymentStatus: 'paid',
+        paymentMethod: isArabic ? 'دفع يدوي مع إيصال' : 'Manual payment with receipt',
+        paymentReference: receiptFile?.name,
+        paymentReceiptDataUrl: receiptPreview,
+        paymentReceiptType: receiptFile?.type,
+        caseAttachments: caseFiles.map((file) => file.name),
+        caseAttachmentFiles,
+      })
+
+      setSubmitted(true)
+      toast.success(isArabic ? 'تم إرسال طلب الاستشارة بنجاح' : 'Consultation request submitted successfully')
+    } catch {
+      toast.error(isArabic ? 'تعذر رفع مرفقات الدعوى، حاول مرة أخرى' : 'Failed to process case attachments, please try again')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  if (submitted) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className={`p-8 bg-primary-black border-2 border-gold/20 rounded-xl max-w-3xl mx-auto shadow-2xl text-center ${pageSpacing}`}
+        dir="rtl"
+      >
+        <div className="mx-auto w-16 h-16 rounded-full bg-green-500/20 border border-green-500/30 flex items-center justify-center mb-6">
+          <Check size={28} className="text-green-400" />
+        </div>
+        <h2 className="text-heading-2 font-cairo font-bold text-gold mb-3">
+          {isArabic ? 'تم استلام طلبك' : 'Your request has been received'}
+        </h2>
+        <p className="text-gray-300 font-cairo mb-6">
+          {isArabic
+            ? 'سيقوم فريقنا بمراجعة الدفع والإيصال ومرفقات الدعوى والتواصل معك قريباً.'
+            : 'Our team will review the payment, receipt, and case attachments and contact you soon.'}
+        </p>
+        <Button
+          onClick={() => navigate('/')}
+          className="px-8 py-4 bg-gradient-to-r from-gold to-gold-light text-black rounded-xl font-cairo"
+        >
+          {isArabic ? 'العودة للرئيسية' : 'Back to Home'}
+        </Button>
+      </motion.div>
+    )
   }
 
   return (
@@ -71,10 +295,10 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6 }}
-      className="p-8 bg-primary-black border-2 border-gold/20 rounded-xl max-w-3xl mx-auto shadow-2xl"
+      className={`p-8 bg-primary-black border-2 border-gold/20 rounded-xl max-w-3xl mx-auto shadow-2xl ${pageSpacing}`}
       dir="rtl"
     >
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex items-center justify-between mb-6 gap-4">
         {onClose && (
           <motion.button
             whileHover={{ scale: 1.1 }}
@@ -89,112 +313,311 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
         </h2>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="label-gold">
-              {isArabic ? 'الاسم الكامل *' : 'Full Name *'}
-            </label>
-            <input
-              type="text"
-              name="name"
-              value={formData.name}
-              onChange={handleChange}
-              required
-              className="input-gold"
-            />
-          </div>
-
-          <div>
-            <label className="label-gold">
-              {isArabic ? 'البريد الإلكتروني *' : 'Email *'}
-            </label>
-            <input
-              type="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              className="input-gold"
-            />
-          </div>
+      <div className="mb-8">
+        <div className="flex items-center justify-between gap-2 mb-3">
+          {steps.map((step) => {
+            const active = step.id === currentStep
+            const completed = step.id < currentStep
+            return (
+              <div key={step.id} className="flex-1 text-center">
+                <div className={`mx-auto w-9 h-9 rounded-full flex items-center justify-center border text-sm font-bold ${completed ? 'bg-gold text-black border-gold' : active ? 'bg-gold/20 text-gold border-gold' : 'bg-charcoal text-gray-400 border-gold/20'}`}>
+                  {completed ? <Check size={16} /> : step.id}
+                </div>
+                <p className={`mt-2 text-xs font-cairo ${active || completed ? 'text-gold' : 'text-gray-500'}`}>
+                  {isArabic ? step.titleAr : step.titleEn}
+                </p>
+              </div>
+            )
+          })}
         </div>
-
-        <div className="grid md:grid-cols-2 gap-4">
-          <div>
-            <label className="label-gold">
-              {isArabic ? 'رقم الهاتف *' : 'Phone *'}
-            </label>
-            <input
-              type="tel"
-              name="phone"
-              value={formData.phone}
-              onChange={handleChange}
-              required
-              className="input-gold"
-            />
-          </div>
-
-          <div>
-            <label className="label-gold">
-              {isArabic ? 'نوع الخدمة *' : 'Service Type *'}
-            </label>
-            <input
-              type="text"
-              name="service"
-              value={formData.service}
-              onChange={handleChange}
-              required
-              className="input-gold"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label className="label-gold">
-            {isArabic ? 'تفاصيل الاستشارة *' : 'Consultation Details *'}
-          </label>
-          <textarea
-            name="details"
-            value={formData.details}
-            onChange={handleChange}
-            rows={4}
-            required
-            className="input-gold resize-none"
+        <div className="h-2 bg-charcoal rounded-full overflow-hidden border border-gold/10">
+          <div
+            className="h-full bg-gradient-to-r from-gold to-gold-light transition-all duration-500"
+            style={{ width: `${(currentStep / steps.length) * 100}%` }}
           />
         </div>
+      </div>
 
-        {/* رفع ملف */}
-        <div>
-          <label className="label-gold">
-            {isArabic ? 'إرفاق مستند (اختياري)' : 'Attach Document (Optional)'}
-          </label>
-          <label className="flex items-center justify-center gap-3 px-4 py-4 bg-charcoal border-2 border-dashed border-gold/30 rounded-lg hover:border-gold/60 transition-colors cursor-pointer">
-            <input
-              type="file"
-              accept=".pdf,.doc,.doc,.docx,.jpg,.png"
-              onChange={handleFileChange}
-              className="hidden"
-            />
-            <Upload size={20} className="text-gold" />
-            <span className="text-gold font-cairo">
-              {formData.attachment
-                ? formData.attachment.name
-                : isArabic
-                  ? 'اختر ملف'
-                  : 'Choose file'}
-            </span>
-          </label>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        {currentStep === 1 && (
+          <div className="space-y-6">
+            <div>
+              <label className="label-gold">
+                {isArabic ? 'نوع الاستشارة *' : 'Consultation Type *'}
+              </label>
+              <select
+                name="consultationKey"
+                value={formData.consultationKey}
+                onChange={(e) => setFormData((prev) => ({ ...prev, consultationKey: e.target.value }))}
+                className="input-gold"
+                required
+              >
+                <option value="">{isArabic ? 'اختر الاستشارة' : 'Select consultation'}</option>
+                {consultationOptions.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {(isArabic ? option.nameAr : option.nameEn) + ` - ${option.amountSar} SAR`}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="p-6 rounded-xl border border-gold/20 bg-charcoal">
+              <p className="text-sm text-gray-400 font-cairo mb-2">
+                {isArabic ? 'رسوم حجز الاستشارة' : 'Consultation booking fee'}
+              </p>
+              <div className="flex items-end justify-between gap-4">
+                <div>
+                  <h3 className="text-3xl font-cairo font-bold text-gold">
+                    {consultationOptions.find((option) => option.key === formData.consultationKey)?.amountSar || 750} {isArabic ? 'ر.س' : 'SAR'}
+                  </h3>
+                  <p className="text-gray-400 font-cairo mt-2">
+                    {isArabic
+                      ? 'يتم الدفع أولاً قبل استكمال بيانات الدعوى ومرفقاتها.'
+                      : 'Payment must be completed before submitting case details and attachments.'}
+                  </p>
+                  <p className="text-gold font-cairo mt-2 font-semibold">
+                    {isArabic
+                      ? 'تنبيه: رسوم حجز الاستشارة غير مستردة بعد الدفع.'
+                      : 'Notice: Consultation booking fee is non-refundable after payment.'}
+                  </p>
+                </div>
+                <div className="hidden md:block text-right text-gray-300 font-cairo text-sm max-w-xs">
+                  {isArabic
+                    ? 'بعد تأكيد الدفع ستنتقل مباشرة إلى رفع صورة الإيصال ثم بيانات الدعوى.'
+                    : 'After payment confirmation, you will proceed to receipt upload and case details.'}
+                </div>
+              </div>
+            </div>
+
+            <Button
+              type="button"
+              onClick={handleConfirmPayment}
+              className="w-full font-cairo py-5 text-lg bg-gradient-to-r from-gold to-gold-light text-black rounded-xl shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              {isArabic ? 'تم الدفع - المتابعة' : 'Payment done - Continue'}
+            </Button>
+          </div>
+        )}
+
+        {currentStep === 2 && (
+          <div className="space-y-4">
+            <div>
+              <label className="label-gold">
+                {isArabic ? 'صورة إيصال الدفع *' : 'Payment Receipt Image *'}
+              </label>
+              <label className="flex items-center justify-center gap-3 px-4 py-4 bg-charcoal border-2 border-dashed border-gold/30 rounded-lg hover:border-gold/60 transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp,.pdf"
+                  onChange={handleReceiptChange}
+                  className="hidden"
+                />
+                <Upload size={20} className="text-gold" />
+                <span className="text-gold font-cairo">
+                  {receiptFile
+                    ? receiptFile.name
+                    : isArabic
+                      ? 'اختر صورة الإيصال'
+                      : 'Choose receipt image'}
+                </span>
+              </label>
+            </div>
+
+            <p className="text-sm text-gray-400 font-cairo">
+              {isArabic
+                ? 'يجب إرفاق صورة واضحة للإيصال قبل الانتقال للخطوة التالية.'
+                : 'A clear receipt image is required before moving to the next step.'}
+            </p>
+          </div>
+        )}
+
+        {currentStep === 3 && (
+          <div className="space-y-4">
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="label-gold">
+                  {isArabic ? 'الاسم الكامل *' : 'Full Name *'}
+                </label>
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  required
+                  className="input-gold"
+                />
+              </div>
+
+              <div>
+                <label className="label-gold">
+                  {isArabic ? 'رقم الهوية الوطنية *' : 'National ID *'}
+                </label>
+                <input
+                  type="text"
+                  name="nationalId"
+                  value={formData.nationalId}
+                  onChange={handleChange}
+                  required
+                  className="input-gold"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="label-gold">
+                {isArabic ? 'العنوان الوطني *' : 'National Address *'}
+              </label>
+              <input
+                type="text"
+                name="nationalAddress"
+                value={formData.nationalAddress}
+                onChange={handleChange}
+                required
+                className="input-gold"
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
+              <div>
+                <label className="label-gold">
+                  {isArabic ? 'رقم الهاتف *' : 'Phone *'}
+                </label>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  required
+                  className="input-gold"
+                />
+              </div>
+
+              <div>
+                <label className="label-gold">
+                  {isArabic ? 'البريد الإلكتروني *' : 'Email *'}
+                </label>
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  required
+                  className="input-gold"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="label-gold">
+                {isArabic ? 'نوع الدعوى *' : 'Case Type *'}
+              </label>
+              <input
+                type="text"
+                name="service"
+                value={formData.service}
+                onChange={handleChange}
+                required
+                className="input-gold"
+                placeholder={isArabic ? 'مثال: نزاع تجاري' : 'Example: Commercial dispute'}
+              />
+            </div>
+          </div>
+        )}
+
+        {currentStep === 4 && (
+          <div className="space-y-5">
+            <div>
+              <label className="label-gold">
+                {isArabic ? 'نص الشكوى *' : 'Complaint Text *'}
+              </label>
+              <textarea
+                name="details"
+                value={formData.details}
+                onChange={handleChange}
+                rows={5}
+                required
+                className="input-gold resize-none"
+                placeholder={isArabic ? 'اكتب ملخص الواقعة والطلبات المطلوبة' : 'Write a summary of the facts and requested relief'}
+              />
+            </div>
+
+            <div>
+              <label className="label-gold">
+                {isArabic ? 'مرفقات الدعوى *' : 'Case Attachments *'}
+              </label>
+              <label className="flex items-center justify-center gap-3 px-4 py-4 bg-charcoal border-2 border-dashed border-gold/30 rounded-lg hover:border-gold/60 transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  multiple
+                  onChange={handleCaseFilesChange}
+                  className="hidden"
+                />
+                <Upload size={20} className="text-gold" />
+                <span className="text-gold font-cairo">
+                  {isArabic ? 'اختر ملفات الدعوى' : 'Choose case files'}
+                </span>
+              </label>
+              <p className="text-xs text-gray-500 font-cairo mt-2">
+                {isArabic
+                  ? 'الحد الأدنى ملفين والحد الأقصى 10 ملفات. أمثلة: تقرير المرور، تقارير طبية، مستندات العقد.'
+                  : 'Minimum 2 files and maximum 10 files. Examples: traffic report, medical reports, contract documents.'}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {caseFiles.map((file, index) => (
+                <div key={`${file.name}-${index}`} className="flex items-center justify-between gap-4 p-3 rounded-lg border border-gold/15 bg-charcoal">
+                  <button
+                    type="button"
+                    onClick={() => removeCaseFile(index)}
+                    className="text-red-400 hover:text-red-300"
+                  >
+                    <XCircle size={18} />
+                  </button>
+                  <div className="text-right flex-1">
+                    <p className="text-white font-cairo text-sm">{file.name}</p>
+                    <p className="text-gray-500 text-xs font-cairo">{(file.size / 1024 / 1024).toFixed(1)} MB</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 pt-2">
+          {currentStep > 1 ? (
+            <Button
+              type="button"
+              onClick={handleBack}
+              className="flex-1 font-cairo py-4 border border-gold/20 bg-transparent text-gold rounded-xl"
+            >
+              <ArrowRight size={18} />
+              {isArabic ? 'رجوع' : 'Back'}
+            </Button>
+          ) : (
+            <div className="flex-1" />
+          )}
+
+          {currentStep < steps.length ? (
+            <Button
+              type="button"
+              onClick={handleNext}
+              className="flex-1 font-cairo py-4 bg-gradient-to-r from-gold to-gold-light text-black rounded-xl shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              {isArabic ? 'التالي' : 'Next'}
+              <ArrowLeft size={18} />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              isLoading={isLoading}
+              className="flex-1 font-cairo py-4 bg-gradient-to-r from-gold to-gold-light text-black rounded-xl shadow-xl hover:scale-105 transition-all duration-300"
+            >
+              {isArabic ? 'إرسال الطلب' : 'Submit Request'}
+            </Button>
+          )}
         </div>
-
-        {/* زرار الدفع */}
-        <Button
-          type="submit"
-          isLoading={isLoading}
-          className="w-full font-cairo py-5 text-lg bg-gradient-to-r from-gold to-gold-light text-black rounded-xl shadow-xl hover:scale-105 transition-all duration-300"
-        >
-          {isArabic ? 'إكمال والدفع' : 'Proceed to Payment'}
-        </Button>
       </form>
     </motion.div>
   )

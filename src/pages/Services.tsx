@@ -3,14 +3,15 @@ import { useParams, Link } from 'react-router-dom'
 import ServiceCard from '@/components/ui/ServiceCard'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
-import { servicesData } from '@/data/mockData'
+import { useAdminStore } from '@/store/adminStore'
 import { ArrowRight } from 'lucide-react'
 
 export default function Services() {
   const { isArabic } = useLanguage()
   const { id } = useParams()
+  const { services } = useAdminStore()
 
-  const service = id ? servicesData.find((s) => s.id === parseInt(id)) : null
+  const service = id ? services.find((s) => s.id === parseInt(id)) : null
 
   if (id && service) {
     return (
@@ -50,11 +51,11 @@ export default function Services() {
 
                 {/* ✅ السعر */}
                 <p className="text-3xl font-bold text-gold mb-4">
-                  {isArabic ? service.priceAr : service.priceEn}
+                  {isArabic ? service.priceAr : service.priceEn || service.priceAr}
                 </p>
 
                 <p className="text-gray-300 font-cairo mb-6 text-lg">
-                  {isArabic ? service.descriptionAr : service.descriptionEn}
+                  {isArabic ? service.descriptionAr : service.descriptionEn || service.descriptionAr}
                 </p>
 
                 <div className="mb-8">
@@ -74,9 +75,19 @@ export default function Services() {
                   </ul>
                 </div>
 
-                <Link to="/book-consultation">                  <Button
+                <Link
+                  to="/book-consultation"
+                  state={{
+                    serviceId: service.id,
+                    serviceNameAr: service.titleAr,
+                    serviceNameEn: service.titleEn || service.titleAr,
+                    servicePriceSar: Number(service.priceAr.replace(/[^0-9]/g, '')) || 750,
+                  }}
+                >
+                  <Button
                     size="lg"
-                    className="font-cairo px-12 py-6 text-xl bg-gradient-to-r from-gold to-gold-light text-black rounded-xl shadow-xl hover:scale-105 transition-all duration-300"                  >
+                    className="font-cairo px-12 py-6 text-xl bg-gradient-to-r from-gold to-gold-light text-black rounded-xl shadow-xl hover:scale-105 transition-all duration-300"
+                  >
                     {isArabic ? 'احجز استشارة' : 'Schedule Consultation'}
                   </Button>
                 </Link>
@@ -114,7 +125,7 @@ export default function Services() {
       <section className="section-padding bg-primary-black">
         <div className="container-max">
           <div className="grid md:grid-cols-3 gap-6">
-            {servicesData.map((service) => (
+            {services.map((service) => (
               <motion.div
                 key={service.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -124,11 +135,11 @@ export default function Services() {
                 <Link to={`/services/${service.id}`}>
                   <ServiceCard
                     titleAr={service.titleAr}
-                    titleEn={service.titleEn}
+                    titleEn={service.titleEn || service.titleAr}
                     descriptionAr={service.descriptionAr}
-                    descriptionEn={service.descriptionEn}
+                    descriptionEn={service.descriptionEn || service.descriptionAr}
                     priceAr={service.priceAr}
-                    priceEn={service.priceEn}
+                    priceEn={service.priceEn || service.priceAr}
                     icon={service.icon}
                     features={service.features}
                   />

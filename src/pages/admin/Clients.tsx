@@ -84,10 +84,8 @@ export default function AdminClients() {
   }
 
   const handleDelete = (client: Client) => {
-    if (confirm(isArabic ? 'هل تريد حذف هذا العميل؟' : 'Are you sure?')) {
-      deleteClient(client.id)
-      toast.success(isArabic ? 'تم حذف العميل' : 'Client deleted')
-    }
+    deleteClient(client.id)
+    toast.success(isArabic ? 'تم حذف العميل' : 'Client deleted')
   }
 
   const columns: Column<Client>[] = [
@@ -127,17 +125,8 @@ export default function AdminClients() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex items-center justify-between mb-8"
+        className="flex items-center gap-4 mb-8"
       >
-        <Button
-          onClick={() => handleOpenModal()}
-          variant="primary"
-          size="lg"
-          className="font-cairo flex-row-reverse"
-        >
-          <Plus size={20} className="me-2" />
-          {isArabic ? 'إضافة عميل' : 'Add Client'}
-        </Button>
         <div>
           <h1 className="text-heading-1 font-cairo font-bold text-gradient">
             {isArabic ? 'ملفات العملاء' : 'Client Files'}
@@ -148,6 +137,15 @@ export default function AdminClients() {
               : `Total Clients: ${clients.length}`}
           </p>
         </div>
+        <Button
+          onClick={() => handleOpenModal()}
+          variant="primary"
+          size="lg"
+          className="font-cairo flex-row-reverse ms-auto"
+        >
+          <Plus size={20} className="me-2" />
+          {isArabic ? 'إضافة عميل' : 'Add Client'}
+        </Button>
       </motion.div>
 
       {/* Table */}
@@ -156,6 +154,9 @@ export default function AdminClients() {
         data={clients}
         onEdit={handleOpenModal}
         onDelete={handleDelete}
+        deleteTitleAr="حذف العميل"
+        deleteTitleEn="Delete Client"
+        getDeleteLabel={(client) => (isArabic ? client.nameAr : client.nameEn)}
       />
 
       {/* Modal */}

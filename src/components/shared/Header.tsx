@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion'
-import { Link } from 'react-router-dom'
-import { Menu, X } from 'lucide-react'
+import { Link, useLocation } from 'react-router-dom'
 import { useState } from 'react'
+import { Home, Menu, X } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useLanguage } from '@/hooks/useLanguage'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
@@ -9,8 +9,10 @@ import Logo from '@/components/ui/Logo'
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false)
+  const location = useLocation()
   const { isAuthenticated, user, logout } = useAuth()
   const { isArabic } = useLanguage()
+  const isAdminArea = location.pathname.startsWith('/admin')
 
   const navItems = [
     { labelAr: 'الخدمات', labelEn: 'Services', href: '/services' },
@@ -24,96 +26,114 @@ export default function Header() {
   ]
 
   return (
-    <header className="fixed w-full top-0 z-50 bg-charcoal border-b border-gold/20" dir="rtl">
-      <nav className="container-max py-3 md:py-4 px-4 md:px-0">
-        <div className="flex items-center justify-between">
+    <header className="fixed top-0 left-0 right-0 z-50 px-2 md:px-5 pt-2" dir="rtl">
+      <nav className="bg-charcoal/95 backdrop-blur-xl border border-gold/15 shadow-[0_12px_40px_rgba(0,0,0,0.28)] rounded-2xl max-w-[1600px] mx-auto">
+        <div className="container-max py-2.5 md:py-3 px-3 md:px-5">
+        <div className="flex items-center justify-between gap-3">
           {/* Logo */}
           <Link to="/" onClick={() => setIsOpen(false)}>
             <motion.div
               whileHover={{ scale: 1.05 }}
-              className="flex items-center gap-3 font-cairo text-lg md:text-2xl font-bold text-gold"
+              className="flex items-center gap-2 md:gap-3 font-cairo text-lg md:text-2xl font-bold text-gold"
             >
-              <Logo variant="dark" className="w-16 h-16 md:w-[12rem] md:h-20 object-contain rounded-md" />
-              {/* <span className="hidden sm:inline">
-                {isArabic ? 'مكتب المحامية مريم بنت محمد' : 'Maryam bint Mohammed Law Office'}
-              </span> */}
+              {isAdminArea ? (
+                <div className="flex items-center justify-center w-10 h-10 md:w-12 md:h-12 rounded-full bg-gold/10 border border-gold/20 text-gold">
+                  <Home size={20} className="md:hidden" />
+                  <Home size={22} className="hidden md:block" />
+                </div>
+              ) : (
+                <Logo variant="dark" className="w-16 h-16 md:w-24 md:h-24 object-contain rounded-xl" />
+              )}
+              {!isAdminArea && (
+                <span className="hidden sm:inline text-white/90 text-sm md:text-base lg:text-lg font-semibold">
+                  {isArabic ? 'مكتب المحامية مريم بنت محمد' : 'Maryam bint Mohammed Law Office'}
+                </span>
+              )}
             </motion.div>
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-4 xl:gap-6">
-            {navItems.map((item) => (
-              <Link key={item.href} to={item.href}>
-                <motion.span
-                  whileHover={{ color: '#C6A75E' }}
-                  className="text-white transition-colors font-cairo text-xs xl:text-sm"
-                >
-                  {isArabic ? item.labelAr : item.labelEn}
-                </motion.span>
-              </Link>
-            ))}
-          </div>
+          {!isAdminArea && (
+            <div className="hidden lg:flex items-center gap-3 xl:gap-4 px-3 py-1.5 rounded-full bg-white/5 border border-white/5">
+              {navItems.map((item) => (
+                <Link key={item.href} to={item.href}>
+                  <motion.span
+                    whileHover={{ color: '#C6A75E', y: -1 }}
+                    className="text-white/90 transition-colors font-cairo text-sm xl:text-base font-medium"
+                  >
+                    {isArabic ? item.labelAr : item.labelEn}
+                  </motion.span>
+                </Link>
+              ))}
+            </div>
+          )}
 
           {/* Auth Actions */}
-          <div className="flex items-center gap-2 md:gap-4 flex-row-reverse">
+          <div className="flex items-center gap-2 md:gap-3 flex-row-reverse">
             <LanguageSwitcher />
 
             {isAuthenticated ? (
-              <div className="hidden sm:flex items-center gap-2 md:gap-4 flex-row-reverse">
+              <div className="hidden sm:flex items-center gap-2 md:gap-2.5 flex-row-reverse">
                 {user?.role === 'admin' && (
                   <Link to="/admin/dashboard">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
-                      className="px-2 md:px-4 py-2 bg-gold text-primary-black rounded-lg font-cairo font-semibold text-xs md:text-sm"
+                      className="px-3 md:px-4 py-1.5 bg-gradient-to-r from-gold to-gold-light text-primary-black rounded-full font-cairo font-semibold text-xs md:text-sm shadow-lg shadow-gold/20"
                     >
                       {isArabic ? 'لوحة التحكم' : 'Dashboard'}
                     </motion.button>
                   </Link>
                 )}
                 {user?.role === 'client' && (
+                  !isAdminArea && (
                   <Link to="/client/dashboard">
                     <motion.button
                       whileHover={{ scale: 1.05 }}
-                      className="px-2 md:px-4 py-2 bg-gold text-primary-black rounded-lg font-cairo font-semibold text-xs md:text-sm"
+                      className="px-3 md:px-4 py-1.5 bg-gradient-to-r from-gold to-gold-light text-primary-black rounded-full font-cairo font-semibold text-xs md:text-sm shadow-lg shadow-gold/20"
                     >
                       {isArabic ? 'حسابي' : 'My Account'}
                     </motion.button>
                   </Link>
+                  )
                 )}
-                <span className="text-xs md:text-sm text-gold font-cairo hidden md:inline">
+                <span className="hidden md:inline-flex items-center px-3 py-2 rounded-full bg-white/5 text-xs md:text-sm text-gold font-cairo border border-gold/10">
                   {user?.nameAr || user?.nameEn}
                 </span>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   onClick={logout}
-                  className="px-2 md:px-4 py-2 bg-gold/20 text-gold rounded-lg hover:bg-gold/30 font-cairo text-xs md:text-sm"
+                  className="px-3 md:px-4 py-1.5 bg-white/5 text-gold rounded-full hover:bg-gold/15 border border-gold/15 font-cairo text-xs md:text-sm"
                 >
                   {isArabic ? 'خروج' : 'Logout'}
                 </motion.button>
               </div>
             ) : (
-              <Link to="/login">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  className="px-2 md:px-4 py-2 bg-gold text-primary-black rounded-lg font-semibold font-cairo text-xs md:text-sm"
-                >
-                  {isArabic ? 'دخول' : 'Login'}
-                </motion.button>
-              </Link>
+              !isAdminArea && (
+                <Link to="/login">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    className="px-3 md:px-4 py-1.5 bg-gradient-to-r from-gold to-gold-light text-primary-black rounded-full font-semibold font-cairo text-xs md:text-sm shadow-lg shadow-gold/20"
+                  >
+                    {isArabic ? 'دخول' : 'Login'}
+                  </motion.button>
+                </Link>
+              )
             )}
 
             {/* Mobile Menu Button */}
-            <button
-              onClick={() => setIsOpen(!isOpen)}
-              className="lg:hidden text-gold"
-            >
-              {isOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
+            {!isAdminArea && (
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="lg:hidden text-gold"
+              >
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            )}
           </div>
         </div>
 
         {/* Mobile Navigation */}
-        {isOpen && (
+        {!isAdminArea && isOpen && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -123,7 +143,7 @@ export default function Header() {
               <Link key={item.href} to={item.href}>
                 <motion.div
                   onClick={() => setIsOpen(false)}
-                  className="text-white hover:text-gold transition-colors font-cairo text-sm"
+                  className="text-white/90 hover:text-gold transition-colors font-cairo text-sm py-2"
                 >
                   {isArabic ? item.labelAr : item.labelEn}
                 </motion.div>
@@ -134,14 +154,14 @@ export default function Header() {
               <div className="pt-3 border-t border-gold/20 space-y-2">
                 {user?.role === 'admin' && (
                   <Link to="/admin/dashboard" onClick={() => setIsOpen(false)}>
-                    <div className="text-white hover:text-gold font-cairo text-sm">
+                    <div className="text-white hover:text-gold font-cairo text-sm py-2">
                       {isArabic ? 'لوحة التحكم' : 'Dashboard'}
                     </div>
                   </Link>
                 )}
                 {user?.role === 'client' && (
                   <Link to="/client/dashboard" onClick={() => setIsOpen(false)}>
-                    <div className="text-white hover:text-gold font-cairo text-sm">
+                    <div className="text-white hover:text-gold font-cairo text-sm py-2">
                       {isArabic ? 'حسابي' : 'My Account'}
                     </div>
                   </Link>
@@ -159,6 +179,7 @@ export default function Header() {
             )}
           </motion.div>
         )}
+        </div>
       </nav>
     </header>
   )

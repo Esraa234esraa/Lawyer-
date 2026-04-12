@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Plus, Edit2, Trash2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/admin/Modal'
+import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAdminStore, Internship, Job } from '@/store/adminStore'
 import { toast } from 'sonner'
@@ -28,6 +29,7 @@ export default function AdminOpportunities() {
   const [activeTab, setActiveTab] = useState<'internships' | 'jobs'>('internships')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
+  const [itemToDelete, setItemToDelete] = useState<Internship | Job | null>(null)
   const [formData, setFormData] = useState<OpportunityFormData>({ kind: 'internship' })
 
   const handleOpenModal = (item?: Internship | Job) => {
@@ -114,16 +116,18 @@ export default function AdminOpportunities() {
     handleCloseModal()
   }
 
-  const handleDelete = (id: number) => {
-    if (confirm(isArabic ? 'هل تريد الحذف؟' : 'Are you sure?')) {
-      if (activeTab === 'internships') {
-        deleteInternship(id)
-        toast.success(isArabic ? 'تم حذف التدريب' : 'Internship deleted')
-      } else {
-        deleteJob(id)
-        toast.success(isArabic ? 'تم حذف الوظيفة' : 'Job deleted')
-      }
+  const handleDeleteConfirm = () => {
+    if (!itemToDelete) return
+
+    if ('duration' in itemToDelete) {
+      deleteInternship(itemToDelete.id)
+      toast.success(isArabic ? 'تم حذف التدريب' : 'Internship deleted')
+    } else {
+      deleteJob(itemToDelete.id)
+      toast.success(isArabic ? 'تم حذف الوظيفة' : 'Job deleted')
     }
+
+    setItemToDelete(null)
   }
 
   const items = activeTab === 'internships' ? internships : jobs
@@ -135,9 +139,25 @@ export default function AdminOpportunities() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="flex items-center justify-between mb-8"
+        className="flex items-center gap-4 mb-8"
       >
-        <Button onClick={() => handleOpenModal()} variant="primary" size="lg" className="font-cairo flex-row-reverse">
+        <div>
+          <h1 className="text-heading-1 font-cairo font-bold text-gradient">
+            {isArabic
+              ? activeTab === 'internships'
+                ? 'البرامج التدريبية'
+                : 'الفرص الوظيفية'
+              : activeTab === 'internships'
+              ? 'Internships'
+              : 'Job Opportunities'}
+          </h1>
+          <p className="text-gray-400 font-cairo text-sm">
+            {isArabic
+              ? `إجمالي ${activeTab === 'internships' ? 'البرامج' : 'الوظائف'}: ${items.length}`
+              : `Total ${activeTab === 'internships' ? 'Internships' : 'Jobs'}: ${items.length}`}
+          </p>
+        </div>
+        <Button onClick={() => handleOpenModal()} variant="primary" size="lg" className="font-cairo flex-row-reverse ms-auto">
           <Plus size={20} className="me-2" />
           {activeTab === 'internships'
             ? isArabic
@@ -147,17 +167,6 @@ export default function AdminOpportunities() {
             ? 'إضافة وظيفة'
             : 'Add Job'}
         </Button>
-        <div>
-          <h1 className="text-heading-1 font-cairo font-bold text-gradient">
-            {activeTab === 'internships'
-              ? isArabic
-                ? 'إدارة التدريبات'
-                : 'Manage Internships'
-              : isArabic
-              ? 'إدارة الوظائف'
-              : 'Manage Jobs'}
-          </h1>
-        </div>
       </motion.div>
 
       {/* Tabs */}
@@ -218,7 +227,7 @@ export default function AdminOpportunities() {
                   <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleOpenModal(item)} className="p-2 bg-gold/20 text-gold rounded-lg hover:bg-gold/30">
                     <Edit2 size={18} />
                   </motion.button>
-                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleDelete(item.id)} className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30">
+                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => setItemToDelete(item)} className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30">
                     <Trash2 size={18} />
                   </motion.button>
                 </div>
@@ -227,6 +236,21 @@ export default function AdminOpportunities() {
           ))
         )}
       </motion.div>
+
+      <DeleteConfirmModal
+        isOpen={Boolean(itemToDelete)}
+        onClose={() => setItemToDelete(null)}
+        onConfirm={handleDeleteConfirm}
+        titleAr={isArabic ? (activeTab === 'internships' ? 'حذف التدريب' : 'حذف الوظيفة') : undefined}
+        titleEn={activeTab === 'internships' ? 'Delete Internship' : 'Delete Job'}
+        itemLabel={
+          itemToDelete
+            ? isArabic
+              ? itemToDelete.titleAr
+              : itemToDelete.titleEn
+            : undefined
+        }
+      />
 
       {/* Modal */}
       <Modal

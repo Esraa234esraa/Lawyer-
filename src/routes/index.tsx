@@ -39,6 +39,7 @@ import PaymentPage from '@/components/client/PaymentPage'
 import AdminConsultations from '@/pages/admin/AdminConsultations'
 import CasesAnalysisPage from '@/pages/admin/CasesAnalysisPage'
 import AccountSummaryPage from '@/pages/admin/AccountSummaryPage'
+import CaseTypes from '@/pages/admin/CaseTypes'
 
 export default function AppRoutes() {
   // const { isAuthenticated, user } = useAuth()
@@ -79,16 +80,17 @@ export default function AppRoutes() {
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/services" element={<AdminServices />} />
         <Route path="/admin/cases" element={<AdminCases />} />
+        <Route path="/admin/case-types" element={<CaseTypes />} />
         <Route path="/admin/news" element={<AdminNews />} />
         <Route path="/admin/clients" element={<AdminClients />} />
         <Route path="/admin/internships" element={<AdminInternships />} />
         <Route path="/admin/about" element={<AdminAbout />} />
         <Route path="/admin/clients-files" element={<AdminClientsFiles />} />
         <Route path="/admin/chat" element={<AdminChat />} />
-        <Route path='/admin/consultation' element={<AdminConsultations />} />
+        <Route path="/admin/consultation" element={<AdminConsultations />} />
         <Route path="/admin/opportunities" element={<AdminOpportunities />} />
-         <Route path="/admin/cases-analysis" element={<CasesAnalysisPage />} />
-          <Route path="/admin/account-summary" element={<AccountSummaryPage />} />
+        <Route path="/admin/cases-analysis" element={<CasesAnalysisPage />} />
+        <Route path="/admin/account-summary" element={<AccountSummaryPage />} />
       </Route>
 
       {/* Client Routes */}
