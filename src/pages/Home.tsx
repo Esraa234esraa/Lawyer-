@@ -110,7 +110,7 @@ export default function Home() {
           >
             {/* Animated H1 - حرف بحرف */}
             <motion.h1
-              className="text-display font-cairo font-bold mb-6 text-gradient pb-6"
+              className="text-display font-cairo font-bold mb-6 text-gradient pb-8"
               variants={headingContainer}
               initial="hidden"
               animate="visible"

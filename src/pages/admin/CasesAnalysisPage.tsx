@@ -23,8 +23,7 @@ interface CaseDetail {
 
 export default function CasesAnalysisPage() {
   const [activeSection, setActiveSection] = useState<'overview' | 'workflow'>('overview')
-  const { cases, caseTypes } = useAdminStore()
-  const [selectedStatus, setSelectedStatus] = useState<'لم تبدأ' | 'قيد العمل' | 'عاجلة' | 'مغلقة' | 'منتهية'>('قيد العمل')
+  const { cases } = useAdminStore()
   const [selectedGroup, setSelectedGroup] = useState<string>('finished')
 
   const notStartedCases = cases.filter(c => c.statusAr === 'لم تبدأ')
@@ -87,7 +86,7 @@ export default function CasesAnalysisPage() {
     }
   }
 
-  const totalCases = stats.reduce((sum, item) => sum + item.value, 0)
+  const chartTotal = stats.reduce((sum, item) => sum + item.value, 0)
   const workflowPercent = cases.length ? Math.round((finishedCases.length / cases.length) * 100) : 0
 
   const chartSegments = [
@@ -98,8 +97,6 @@ export default function CasesAnalysisPage() {
     { label: 'منتهية', value: finishedCases.length, color: '#22c55e' },
   ]
 
-                { label: 'القضايا المفتوحة', value: notStartedCases.length + inProgressCases.length },
-                { label: 'القضايا العاجلة', value: urgentCases.length },
   return (
     <div className="min-h-screen bg-charcoal font-cairo text-right">
       <div className="container-max px-4 sm:px-6 lg:px-8 py-6 md:py-8 space-y-6 md:space-y-8">

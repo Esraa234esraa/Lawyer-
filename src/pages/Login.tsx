@@ -1,37 +1,54 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/hooks/useAuth'
 import { useLanguage } from '@/hooks/useLanguage'
 import Button from '@/components/ui/Button'
-import { toast } from 'sonner'
+import { useForm } from 'react-hook-form'
+import { z } from 'zod'
+import { zodResolver } from '@hookform/resolvers/zod'
+
+const loginSchema = z.object({
+  email: z.string().email('البريد الإلكتروني غير صالح'),
+  password: z.string().min(1, 'كلمة المرور مطلوبة'),
+})
+
+type LoginFormValues = z.infer<typeof loginSchema>
 
 export default function Login() {
   const navigate = useNavigate()
   const { login, isLoading, error } = useAuth()
   const { isArabic } = useLanguage()
-  const [formData, setFormData] = useState({
-    email: '',
-    password: '',
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+    setError,
+  } = useForm<LoginFormValues>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
   })
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
+  const onValidSubmit = async (values: LoginFormValues) => {
+    const authenticatedUser = await login(values.email, values.password)
+    navigate(authenticatedUser.role === 'admin' ? '/admin/dashboard' : '/client/dashboard')
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  const onInvalidSubmit = () => {
+    const firstMessage =
+      errors.email?.message || errors.password?.message || (isArabic ? 'تحقق من بيانات الدخول' : 'Please check your credentials')
+    setError('root', { message: firstMessage })
+  }
 
+  const handleLoginSubmit = async (values: LoginFormValues) => {
     try {
-      await login(formData.email, formData.password)
-      toast.success(isArabic ? 'تم تسجيل الدخول بنجاح!' : 'Login successful!')
-      navigate(formData.email.includes('admin') ? '/admin/dashboard' : '/client/dashboard')
-    } catch (err) {
-      toast.error(error || (isArabic ? 'فشل تسجيل الدخول' : 'Login failed'))
+      await onValidSubmit(values)
+    } catch {
+      setError('root', {
+        message: error || (isArabic ? 'فشل تسجيل الدخول' : 'Login failed'),
+      })
     }
   }
 
@@ -48,16 +65,14 @@ export default function Login() {
             {isArabic ? 'تسجيل الدخول' : 'Login'}
           </h1>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(handleLoginSubmit, onInvalidSubmit)} className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-gold mb-2 font-cairo">
                 {isArabic ? 'البريد الإلكتروني' : 'Email'}
               </label>
               <input
                 type="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
+                {...register('email')}
                 className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
                 placeholder="admin@lawfirm.ar"
                 required
@@ -75,9 +90,7 @@ export default function Login() {
               </label>
               <input
                 type="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
+                {...register('password')}
                 className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
                 placeholder="••••••••"
                 required
@@ -87,13 +100,16 @@ export default function Login() {
               </p>
             </div>
 
-            {error && <p className="text-red-500 text-sm font-cairo text-right">{error}</p>}
+            {(errors.root?.message || error) && (
+              <p className="text-red-500 text-sm font-cairo text-right">{errors.root?.message || error}</p>
+            )}
 
             <Button
               type="submit"
               variant="primary"
               size="lg"
               isLoading={isLoading}
+              disabled={isLoading}
               className="w-full font-cairo"
             >
               {isArabic ? 'دخول' : 'Sign In'}
@@ -102,6 +118,13 @@ export default function Login() {
 
           <p className="text-center text-gray-400 text-sm mt-6 font-cairo">
             {isArabic ? 'بيانات الاختبار أعلاه' : 'Test credentials above'}
+          </p>
+
+          <p className="text-center text-gray-400 text-sm mt-3 font-cairo">
+            {isArabic ? 'ليس لديك حساب؟' : "Don't have an account?"}{' '}
+            <Link to="/register" className="text-gold hover:text-gold-light transition-colors">
+              {isArabic ? 'أنشئ حساب' : 'Create one'}
+            </Link>
           </p>
         </div>
       </motion.div>

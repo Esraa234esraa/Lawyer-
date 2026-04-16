@@ -170,10 +170,24 @@ export default function AdminSidebar() {
               transition={{ type: 'spring', damping: 20 }}
               onTouchStart={(e) => handleTouchStart(e as any)}
               onTouchEnd={(e) => handleTouchEnd(e as any)}
-              className="lg:hidden fixed right-0 top-0 bottom-0 w-64 bg-gradient-to-b from-primary-black via-primary-black to-charcoal border-l-2 border-gold/30 overflow-y-auto backdrop-blur-xl bg-opacity-98 z-40"
+              className="lg:hidden fixed right-0 top-0 bottom-0 w-64 bg-gradient-to-b from-primary-black via-primary-black to-charcoal border-l-2 border-gold/30 overflow-y-auto backdrop-blur-xl bg-opacity-98 z-50"
               dir="rtl"
             >
               <nav className="p-6 space-y-2 h-full flex flex-col">
+                <div className="pb-4 mb-4 border-b border-gold/20">
+                  <div className="flex items-center gap-3 flex-row-reverse">
+                    <Logo variant="dark" className="w-10 h-10 rounded-full object-contain border border-gold/50 bg-primary-black" />
+                    <div className="text-right">
+                      <p className="text-gold text-sm font-cairo font-semibold">
+                        مكتب مريم بنت محمد
+                      </p>
+                      <p className="text-[11px] text-gray-500 font-cairo">
+                        للمحاماة والاستشارات القانونية
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
                 <motion.button
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.95 }}
@@ -205,23 +219,6 @@ export default function AdminSidebar() {
                       </motion.div>
                     )
                   })}
-                </div>
-
-                <div className="my-4 border-t border-gold/20" />
-
-                {/* Brand signature – mobile (شعار رقم 1) */}
-                <div className="pb-4">
-                  <div className="flex items-center gap-3 flex-row-reverse">
-                    <Logo variant="dark" className="w-10 h-10 rounded-full object-contain border border-gold/50 bg-primary-black" />
-                    <div className="text-right">
-                      <p className="text-gold text-sm font-cairo font-semibold">
-                        مكتب مريم بنت محمد
-                      </p>
-                      <p className="text-[11px] text-gray-500 font-cairo">
-                        للمحاماة والاستشارات القانونية
-                      </p>
-                    </div>
-                  </div>
                 </div>
 
                 <motion.button

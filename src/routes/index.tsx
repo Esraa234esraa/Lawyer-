@@ -16,6 +16,7 @@ import Internships from '@/pages/Internships'
 import Jobs from '@/pages/Jobs'
 import FAQ from '@/pages/FAQ'
 import Login from '@/pages/Login'
+import Register from '@/pages/Register'
 
 // Admin Pages
 import AdminDashboard from '@/pages/admin/Dashboard'
@@ -68,6 +69,7 @@ export default function AppRoutes() {
 
       {/* Auth Route */}
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
 
       {/* Admin Routes */}
       <Route

@@ -26,12 +26,12 @@ export default function Header() {
   ]
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 px-2 md:px-5 pt-2" dir="rtl">
+    <header className="fixed top-0 left-0 right-0 z-40 px-2 md:px-5 pt-2" dir="rtl">
       <nav className="bg-charcoal/95 backdrop-blur-xl border border-gold/15 shadow-[0_12px_40px_rgba(0,0,0,0.28)] rounded-2xl max-w-[1600px] mx-auto">
         <div className="container-max py-2.5 md:py-3 px-3 md:px-5">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-start lg:justify-between gap-3">
           {/* Logo */}
-          <Link to="/" onClick={() => setIsOpen(false)}>
+          <Link to="/" onClick={() => setIsOpen(false)} className="hidden lg:block">
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="flex items-center gap-2 md:gap-3 font-cairo text-lg md:text-2xl font-bold text-gold"
@@ -69,11 +69,13 @@ export default function Header() {
           )}
 
           {/* Auth Actions */}
-          <div className="flex items-center gap-2 md:gap-3 flex-row-reverse">
-            <LanguageSwitcher />
+          <div className="flex items-center gap-2 md:gap-3 flex-row-reverse lg:mr-0 mr-auto">
+            <div className="hidden lg:block">
+              <LanguageSwitcher />
+            </div>
 
             {isAuthenticated ? (
-              <div className="hidden sm:flex items-center gap-2 md:gap-2.5 flex-row-reverse">
+              <div className="flex items-center gap-2 md:gap-2.5 flex-row-reverse">
                 {user?.role === 'admin' && (
                   <Link to="/admin/dashboard">
                     <motion.button
@@ -109,14 +111,24 @@ export default function Header() {
               </div>
             ) : (
               !isAdminArea && (
-                <Link to="/login">
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    className="px-3 md:px-4 py-1.5 bg-gradient-to-r from-gold to-gold-light text-primary-black rounded-full font-semibold font-cairo text-xs md:text-sm shadow-lg shadow-gold/20"
-                  >
-                    {isArabic ? 'دخول' : 'Login'}
-                  </motion.button>
-                </Link>
+                <div className="flex items-center gap-2 md:gap-2.5 flex-row-reverse">
+                  <Link to="/register">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      className="px-3 md:px-4 py-1.5 bg-white/5 text-gold rounded-full hover:bg-gold/15 border border-gold/15 font-cairo text-xs md:text-sm"
+                    >
+                      {isArabic ? 'إنشاء حساب' : 'Register'}
+                    </motion.button>
+                  </Link>
+                  <Link to="/login">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      className="px-3 md:px-4 py-1.5 bg-gradient-to-r from-gold to-gold-light text-primary-black rounded-full font-semibold font-cairo text-xs md:text-sm shadow-lg shadow-gold/20"
+                    >
+                      {isArabic ? 'دخول' : 'Login'}
+                    </motion.button>
+                  </Link>
+                </div>
               )
             )}
 
@@ -175,6 +187,21 @@ export default function Header() {
                 >
                   {isArabic ? 'تسجيل الخروج' : 'Logout'}
                 </button>
+              </div>
+            )}
+
+            {!isAuthenticated && (
+              <div className="pt-3 border-t border-gold/20 space-y-2">
+                <Link to="/login" onClick={() => setIsOpen(false)}>
+                  <div className="text-white hover:text-gold font-cairo text-sm py-2">
+                    {isArabic ? 'تسجيل الدخول' : 'Login'}
+                  </div>
+                </Link>
+                <Link to="/register" onClick={() => setIsOpen(false)}>
+                  <div className="text-white hover:text-gold font-cairo text-sm py-2">
+                    {isArabic ? 'إنشاء حساب' : 'Register'}
+                  </div>
+                </Link>
               </div>
             )}
           </motion.div>
