@@ -3,73 +3,29 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import DataTable, { Column } from '@/components/admin/DataTable'
-import Modal from '@/components/admin/Modal'
-import { useAdminStore, CaseType, Case } from '@/store/adminStore'
+import { useGetAllIssues, useGetIssueTypes } from '@/hooks/issues'
+import { Issue } from '@/types/issues'
 import { toast } from 'sonner'
 
+type CaseTypeRow = {
+  id: string
+  nameAr: string
+  nameEn?: string
+}
+
 export default function CaseTypes() {
-  const { caseTypes, addCaseType, updateCaseType, deleteCaseType, cases } = useAdminStore()
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [selectedType, setSelectedType] = useState<number | null>(null)
-  const [formData, setFormData] = useState<Omit<CaseType, 'id'>>({
-    nameAr: '',
-  })
+  const [selectedType, setSelectedType] = useState<string | null>(null)
+  const { data: issueTypesResponse, isLoading: isTypesLoading, isFetching: isTypesFetching } = useGetIssueTypes()
+  const { data: issuesResponse, isLoading: isIssuesLoading } = useGetAllIssues()
 
-  const handleOpenModal = (caseType?: CaseType) => {
-    if (caseType) {
-      setFormData({
-        nameAr: caseType.nameAr,
-      })
-      setEditingId(caseType.id)
-    } else {
-      setFormData({
-        nameAr: '',
-      })
-      setEditingId(null)
-    }
-    setIsModalOpen(true)
+  const caseTypes: CaseTypeRow[] = issueTypesResponse?.data || []
+  const issues: Issue[] = issuesResponse?.data || []
+
+  const getCasesForType = (typeId: string) => {
+    return issues.filter((issue) => issue.issueTypeId === typeId)
   }
 
-  const handleCloseModal = () => {
-    setIsModalOpen(false)
-    setEditingId(null)
-  }
-
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (editingId) {
-      updateCaseType(editingId, formData)
-      toast.success('تم تحديث نوع القضية')
-    } else {
-      addCaseType(formData)
-      toast.success('تمت إضافة نوع القضية')
-    }
-
-    handleCloseModal()
-  }
-
-  const handleDelete = (caseType: CaseType) => {
-    deleteCaseType(caseType.id)
-    toast.success('تم حذف نوع القضية')
-  }
-
-  const getCasesForType = (typeId: number) => {
-    return cases.filter((c: Case) => c.typeArId === typeId)
-  }
-
-  const columns: Column<CaseType>[] = [
+  const columns: Column<CaseTypeRow>[] = [
     {
       key: 'nameAr',
       labelAr: 'اسم النوع',
@@ -80,7 +36,7 @@ export default function CaseTypes() {
           onClick={() => setSelectedType(item.id)}
           className="font-cairo text-white hover:text-gold transition-colors"
         >
-          {item.nameAr}
+          {item.nameAr || item.nameEn || 'غير محدد'}
         </button>
       ),
     },
@@ -102,45 +58,38 @@ export default function CaseTypes() {
 
   const selectedTypeCases = selectedType ? getCasesForType(selectedType) : []
 
-  const casesColumns: Column<Case>[] = [
+  const casesColumns: Column<Issue>[] = [
     {
-      key: 'titleAr',
+      key: 'titeleAr',
       labelAr: 'عنوان القضية',
       labelEn: 'Case Title',
-      render: (_value, item) => item.titleAr,
+      render: (_value, item) => item.titeleAr,
     },
     {
-      key: 'plaintiffAr',
-      labelAr: 'المدعي',
-      labelEn: 'Plaintiff',
-      render: (_value, item) => item.plaintiffAr,
-    },
-    {
-      key: 'defendantAr',
+      key: 'defendant',
       labelAr: 'المدعي عليه',
       labelEn: 'Defendant',
-      render: (_value, item) => item.defendantAr,
+      render: (_value, item) => item.defendant,
     },
     {
-      key: 'statusAr',
-      labelAr: 'الحالة',
-      labelEn: 'Status',
+      key: 'clients',
+      labelAr: 'عدد العملاء',
+      labelEn: 'Clients',
       render: (value) => (
-        <span className={`px-3 py-1 rounded-full text-sm font-cairo ${
-          value === 'منتهية' ? 'bg-green-500/20 text-green-300' :
-          value === 'قيد العمل' ? 'bg-blue-500/20 text-blue-300' :
-          value === 'عاجلة' ? 'bg-red-500/20 text-red-300' :
-          value === 'مغلقة' ? 'bg-purple-500/20 text-purple-300' :
-          'bg-gray-500/20 text-gray-300'
-        }`}>
-          {value}
+        <span className="px-3 py-1 rounded-full text-sm font-cairo bg-gold/10 text-gold">
+          {Array.isArray(value) ? value.length : 0}
         </span>
       ),
     },
     {
-      key: 'yearAr',
-      labelAr: 'السنة',
-      labelEn: 'Year',
+      key: 'attachments',
+      labelAr: 'عدد المرفقات',
+      labelEn: 'Attachments',
+      render: (value) => (
+        <span className="px-3 py-1 rounded-full text-sm font-cairo bg-blue-500/10 text-blue-300">
+          {Array.isArray(value) ? value.length : 0}
+        </span>
+      ),
     },
   ]
 
@@ -160,9 +109,12 @@ export default function CaseTypes() {
           <p className="text-gray-400 font-cairo text-sm">
             إجمالي الأنواع: {caseTypes.length}
           </p>
+          {(isTypesLoading || isIssuesLoading || isTypesFetching) && (
+            <p className="text-gray-500 font-cairo text-xs mt-1">جاري تحميل البيانات...</p>
+          )}
         </div>
         <Button
-          onClick={() => handleOpenModal()}
+          onClick={() => toast.info('إضافة أنواع القضايا غير متاحة حالياً من الواجهة الخلفية')}
           variant="primary"
           size="lg"
           className="font-cairo flex-row-reverse ms-auto"
@@ -180,12 +132,7 @@ export default function CaseTypes() {
             columns={columns}
             data={caseTypes}
             onView={(caseType) => setSelectedType(caseType.id)}
-            onEdit={handleOpenModal}
-            onDelete={handleDelete}
-            deleteTitleAr="حذف النوع"
-            deleteTitleEn="Delete Type"
-            getDeleteLabel={(caseType) => caseType.nameAr}
-            actions={true}
+            actions={false}
           />
         </div>
 
@@ -206,7 +153,9 @@ export default function CaseTypes() {
                   ← رجوع
                 </button>
                 <h2 className="text-heading-2 font-cairo font-bold text-gradient">
-                  {caseTypes.find(t => t.id === selectedType)?.nameAr}
+                  {caseTypes.find((t) => t.id === selectedType)?.nameAr ||
+                    caseTypes.find((t) => t.id === selectedType)?.nameEn ||
+                    'غير محدد'}
                 </h2>
               </div>
               <p className="text-gray-400 font-cairo text-sm mt-2">
@@ -245,47 +194,6 @@ export default function CaseTypes() {
           </motion.div>
         )}
       </div>
-
-      {/* Modal */}
-      <Modal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title="Add Case Type"
-        titleAr="إضافة/تعديل نوع قضية"
-      >
-        <form onSubmit={handleSubmit} className="space-y-6" dir="rtl">
-          <div>
-            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-              اسم النوع
-            </label>
-            <input
-              type="text"
-              name="nameAr"
-              value={formData.nameAr}
-              onChange={handleChange}
-              required
-              placeholder="مثال: نزاعات تجارية"
-              className="w-full px-4 py-2 rounded border border-gold/30 bg-charcoal text-white font-cairo focus:border-gold outline-none transition-colors"
-            />
-          </div>
-
-          <div className="flex gap-3 justify-end pt-4">
-            <button
-              type="button"
-              onClick={handleCloseModal}
-              className="px-6 py-2 rounded border border-gold/30 text-gray-300 font-cairo hover:border-gold transition-colors"
-            >
-              إلغاء
-            </button>
-            <button
-              type="submit"
-              className="px-6 py-2 rounded bg-gradient-to-r from-gold to-gold-light text-primary-black font-cairo font-semibold hover:opacity-90 transition-opacity"
-            >
-              {editingId ? 'تحديث' : 'إضافة'}
-            </button>
-          </div>
-        </form>
-      </Modal>
     </div>
   )
 }

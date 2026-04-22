@@ -30,5 +30,10 @@
     }
   },
   "include": ["src"],
+  "exclude": [
+    "src/components/auth/AuthPatterns.example.tsx",
+    "src/components/news/NewsExamples.tsx",
+    "src/components/news/QUICK_REFERENCE.tsx"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

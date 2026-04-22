@@ -10,6 +10,7 @@ interface LanguageState {
 export const useLanguageStore = create<LanguageState>((set) => ({
   language: 'ar',
   setLanguage: (lang) => {
+    void lang
     const forcedLang: Language = 'ar'
     set({ language: forcedLang })
     document.documentElement.lang = forcedLang

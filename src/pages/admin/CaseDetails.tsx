@@ -1,8 +1,8 @@
-import { useParams, useNavigate } from 'react-router-dom'
-import { useLanguage } from '@/hooks/useLanguage'
-import { motion } from 'framer-motion'
 import { useMemo } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
+import { motion } from 'framer-motion'
 import { useGetIssueById, useGetIssueTypes } from '@/hooks/issues'
+import { useLanguage } from '@/hooks/useLanguage'
 
 const resolveAttachmentPath = (filePath: string | undefined) => {
   if (!filePath) return ''
@@ -11,7 +11,7 @@ const resolveAttachmentPath = (filePath: string | undefined) => {
   return `https://lawm.runasp.net/${normalized}`
 }
 
-export default function CaseDetails() {
+export default function AdminCaseDetails() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { isArabic } = useLanguage()
@@ -28,33 +28,14 @@ export default function CaseDetails() {
     return isArabic ? found?.nameAr || 'غير محدد' : found?.nameEn || found?.nameAr || 'N/A'
   }, [issue, issueTypes, isArabic])
 
-  const attachments = useMemo(() => issue?.attachments || [], [issue?.attachments])
-  const clients = useMemo(() => issue?.clients || [], [issue?.clients])
-
-  const handleOpenAttachment = (url?: string) => {
-    if (!url) return
-    window.open(url, '_blank', 'noopener,noreferrer')
-  }
-
-  const handleDownloadAttachment = (url: string | undefined, fileName: string) => {
-    if (!url) return
-    const link = document.createElement('a')
-    link.href = url
-    link.download = fileName
-    link.target = '_blank'
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-  }
-
   if (isLoading) {
     return <div className="text-gray-300 font-cairo">{isArabic ? 'جاري تحميل بيانات القضية...' : 'Loading case details...'}</div>
   }
 
   if (!issue) {
     return (
-      <div dir={isArabic ? 'rtl' : 'ltr'} className="space-y-6">
-        <button onClick={() => navigate(-1)} className="text-gold hover:underline font-cairo">
+      <div dir="rtl" className="space-y-6">
+        <button onClick={() => navigate('/admin/cases')} className="text-gold hover:underline font-cairo">
           {isArabic ? '← رجوع' : '← Back'}
         </button>
         <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-red-200 font-cairo">
@@ -64,6 +45,8 @@ export default function CaseDetails() {
     )
   }
 
+  const attachments = issue.attachments || []
+  const clients = issue.clients || []
   const previewImage = resolveAttachmentPath(attachments[0]?.filePath)
 
   return (
@@ -71,10 +54,10 @@ export default function CaseDetails() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      dir={isArabic ? 'rtl' : 'ltr'}
+      dir="rtl"
       className="space-y-8"
     >
-      <button onClick={() => navigate(-1)} className="text-gold hover:underline font-cairo">
+      <button onClick={() => navigate('/admin/cases')} className="text-gold hover:underline font-cairo">
         {isArabic ? '← رجوع' : '← Back'}
       </button>
 
@@ -107,16 +90,6 @@ export default function CaseDetails() {
                 <div key={`${client.nationalId}-${index}`} className="rounded-lg border border-gold/20 p-4 bg-black/20">
                   <p className="text-white text-sm">{client.name}</p>
                   <p className="text-gray-400 text-xs">{client.nationalId}</p>
-                  {client.nationalIdentityPath && (
-                    <a
-                      href={resolveAttachmentPath(client.nationalIdentityPath)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-gold text-xs hover:underline"
-                    >
-                      {isArabic ? 'عرض الهوية' : 'View Identity'}
-                    </a>
-                  )}
                 </div>
               ))}
             </div>
@@ -133,32 +106,16 @@ export default function CaseDetails() {
                 const fileUrl = resolveAttachmentPath(attachment.filePath)
                 const fileName = attachment.filePath.split('/').pop() || `attachment-${index + 1}`
                 return (
-                  <div
+                  <a
                     key={`${attachment.filePath}-${index}`}
-                    className="flex flex-wrap justify-between items-center gap-3 bg-primary-black border border-gold/10 hover:border-gold/40 rounded-lg px-4 py-3 transition"
+                    href={fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="block bg-primary-black border border-gold/10 hover:border-gold/40 rounded-lg px-4 py-3 transition"
                   >
-                    <div className="space-y-1">
-                      <p className="text-gray-200 font-cairo text-sm">{isArabic ? `مرفق ${index + 1}` : `Attachment ${index + 1}`}</p>
-                      <p className="text-xs text-gray-400">{fileName}</p>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenAttachment(fileUrl)}
-                        className="px-2 py-1 rounded-md bg-gold/15 text-gold text-xs"
-                      >
-                        {isArabic ? 'فتح' : 'Open'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDownloadAttachment(fileUrl, fileName)}
-                        className="px-2 py-1 rounded-md bg-blue-500/15 text-blue-300 text-xs"
-                      >
-                        {isArabic ? 'تحميل' : 'Download'}
-                      </button>
-                    </div>
-                  </div>
+                    <p className="text-gray-200 font-cairo text-sm">{isArabic ? `مرفق ${index + 1}` : `Attachment ${index + 1}`}</p>
+                    <p className="text-xs text-gray-400">{fileName}</p>
+                  </a>
                 )
               })}
             </div>

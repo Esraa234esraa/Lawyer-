@@ -1,17 +1,60 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import NewsCard from '@/components/ui/NewsCard'
 import { useLanguage } from '@/hooks/useLanguage'
-import { newsData } from '@/data/mockData'
+import { useGetVisibleNews } from '@/hooks/news'
 import { ArrowRight } from 'lucide-react'
 
 export default function News() {
   const { isArabic } = useLanguage()
   const { id } = useParams()
   const [filter, setFilter] = useState<string | null>(null)
+  const { data, error, isLoading, isFetching } = useGetVisibleNews()
 
-  const newsItem = id ? newsData.find((n) => n.id === parseInt(id)) : null
+  const newsData = data?.data || []
+
+  const resolveImagePath = (filePath: string) => {
+    if (!filePath) return ''
+    if (filePath.startsWith('http')) return filePath
+
+    const normalized = filePath.replace(/^\/?wwwroot\/?/i, '')
+    return `https://lawm.runasp.net/${normalized}`
+  }
+
+  const newsItem = useMemo(() => {
+    if (!id) return null
+    return newsData.find((n) => n.id === id) || null
+  }, [id, newsData])
+
+  const categories = useMemo(
+    () => [
+      isArabic ? 'الكل' : 'All',
+      isArabic ? 'النشطة' : 'Active',
+      isArabic ? 'غير النشطة' : 'Inactive',
+    ],
+    [isArabic]
+  )
+
+  const filteredNews = useMemo(() => {
+    if (!filter || filter === categories[0]) return newsData
+    if (filter === categories[1]) return newsData.filter((n) => n.isActive)
+    if (filter === categories[2]) return newsData.filter((n) => !n.isActive)
+    return newsData
+  }, [categories, filter, newsData])
+
+  const relatedNews = useMemo(() => {
+    if (!newsItem) return newsData.slice(0, 3)
+    return newsData.filter((n) => n.id !== newsItem.id).slice(0, 3)
+  }, [newsData, newsItem])
+
+  const noNewsMessage = useMemo(() => {
+    if (error instanceof Error && error.message.trim().length > 0) {
+      return error.message
+    }
+
+    return isArabic ? 'لا توجد دراسة او دورات' : 'No news available'
+  }, [error, isArabic])
 
   if (id && newsItem) {
     return (
@@ -31,31 +74,37 @@ export default function News() {
                   transition={{ duration: 0.8 }}
                 >
                   <img
-                    src={newsItem.image}
-                    alt={isArabic ? newsItem.titleAr : newsItem.titleEn}
+                    src={resolveImagePath(newsItem.filePath)}
+                    alt={newsItem.name}
                     className="rounded-lg border-2 border-gold/20 w-full mb-8"
                   />
 
                   <div className="mb-4">
                     <span className="text-xs bg-gold/20 text-gold px-3 py-1 rounded-full font-cairo">
-                      {isArabic ? newsItem.category : newsItem.categoryEn}
+                      {newsItem.isActive
+                        ? isArabic
+                          ? 'نشط'
+                          : 'Active'
+                        : isArabic
+                        ? 'غير نشط'
+                        : 'Inactive'}
                     </span>
                   </div>
 
                   <h1 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">
-                    {isArabic ? newsItem.titleAr : newsItem.titleEn}
+                    {newsItem.name}
                   </h1>
 
                   <div className="flex items-center gap-4 text-gray-400 font-cairo mb-8 flex-row-reverse">
-                    <span>{isArabic ? newsItem.author : newsItem.authorEn}</span>
+                    <span>{isArabic ? 'أخبار المكتب' : 'Firm News'}</span>
                     <span>•</span>
-                    <span>{new Date(newsItem.date).toLocaleDateString('ar-SA')}</span>
+                    <span>{new Date(newsItem.actionDate).toLocaleDateString('ar-SA')}</span>
                   </div>
 
                   <div className="prose prose-invert max-w-none text-gray-300 font-cairo text-right leading-relaxed">
-                    <p className="mb-4">{isArabic ? newsItem.content : newsItem.contentEn}</p>
-                    <p className="mb-4">{isArabic ? newsItem.content : newsItem.contentEn}</p>
-                    <p>{isArabic ? newsItem.content : newsItem.contentEn}</p>
+                    <p className="mb-4">{newsItem.description}</p>
+                    <p className="mb-4">{newsItem.description}</p>
+                    <p>{newsItem.description}</p>
                   </div>
                 </motion.div>
               </div>
@@ -70,14 +119,14 @@ export default function News() {
                   {isArabic ? 'أخبار ذات صلة' : 'Related News'}
                 </h3>
                 <div className="space-y-4">
-                  {newsData.slice(0, 3).map((news) => (
+                  {relatedNews.map((news) => (
                     <Link key={news.id} to={`/news/${news.id}`}>
                       <div className="p-4 bg-primary-black border border-gold/20 rounded-lg hover:border-gold/50 transition-all cursor-pointer text-right">
                         <h4 className="text-sm font-cairo font-semibold text-gold mb-2">
-                          {isArabic ? news.titleAr : news.titleEn}
+                          {news.name}
                         </h4>
                         <p className="text-xs text-gray-400 font-cairo">
-                          {new Date(news.date).toLocaleDateString('ar-SA')}
+                          {new Date(news.actionDate).toLocaleDateString('ar-SA')}
                         </p>
                       </div>
                     </Link>
@@ -90,11 +139,6 @@ export default function News() {
       </div>
     )
   }
-
-  const categories = [...new Set(newsData.map((n) => n.category))]
-  const filteredNews = filter
-    ? newsData.filter((n) => n.category === filter)
-    : newsData
 
   return (
     <div dir="rtl" className="pt-24">
@@ -124,16 +168,16 @@ export default function News() {
           <div className="flex justify-end gap-3 flex-wrap">
             <motion.button
               whileHover={{ scale: 1.05 }}
-              onClick={() => setFilter(null)}
+              onClick={() => setFilter(categories[0])}
               className={`px-4 py-2 rounded-lg font-cairo transition-all ${
-                !filter
+                !filter || filter === categories[0]
                   ? 'bg-gold text-primary-black'
                   : 'bg-charcoal border border-gold/20 text-gold hover:border-gold'
               }`}
             >
-              {isArabic ? 'الكل' : 'All'}
+              {categories[0]}
             </motion.button>
-            {categories.map((category) => (
+            {categories.slice(1).map((category) => (
               <motion.button
                 key={category}
                 whileHover={{ scale: 1.05 }}
@@ -151,34 +195,48 @@ export default function News() {
         </div>
       </section>
 
+      {(isLoading || isFetching) && (
+        <section className="py-4 bg-charcoal">
+          <div className="container-max text-gray-400 font-cairo text-right text-sm">
+            {isArabic ? 'جاري تحميل الأخبار...' : 'Loading news...'}
+          </div>
+        </section>
+      )}
+
       {/* News Grid */}
       <section className="section-padding bg-charcoal">
         <div className="container-max">
-          <div className="grid md:grid-cols-3 gap-8">
-            {filteredNews.map((news) => (
-              <motion.div
-                key={news.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-              >
-                <Link to={`/news/${news.id}`}>
-                  <NewsCard
-                    titleAr={news.titleAr}
-                    titleEn={news.titleEn}
-                    descriptionAr={news.descriptionAr}
-                    descriptionEn={news.contentEn}
-                    date={news.date}
-                    categoryAr={news.category}
-                    categoryEn={news.categoryEn}
-                    image={news.image}
-                    authorAr={news.author}
-                    authorEn={news.authorEn}
-                  />
-                </Link>
-              </motion.div>
-            ))}
-          </div>
+          {!isLoading && newsData.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-gray-300 font-cairo text-lg">{noNewsMessage}</p>
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-8">
+              {filteredNews.map((news) => (
+                <motion.div
+                  key={news.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8 }}
+                >
+                  <Link to={`/news/${news.id}`}>
+                    <NewsCard
+                      titleAr={news.name}
+                      titleEn={news.name}
+                      descriptionAr={news.description}
+                      descriptionEn={news.description}
+                      date={String(news.actionDate)}
+                      categoryAr={news.isActive ? 'نشط' : 'غير نشط'}
+                      categoryEn={news.isActive ? 'Active' : 'Inactive'}
+                      image={resolveImagePath(news.filePath)}
+                      authorAr="أخبار المكتب"
+                      authorEn="Firm News"
+                    />
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
     </div>

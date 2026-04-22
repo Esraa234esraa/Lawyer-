@@ -9,6 +9,23 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          react: ['react', 'react-dom'],
+          router: ['react-router-dom'],
+          query: ['@tanstack/react-query'],
+          forms: ['react-hook-form', '@hookform/resolvers', 'zod'],
+          motion: ['framer-motion'],
+          icons: ['lucide-react'],
+          ui: ['@headlessui/react', 'sonner'],
+          state: ['zustand'],
+          http: ['axios'],
+        },
+      },
+    },
+  },
   server: {
     port: 3000,
     open: true,

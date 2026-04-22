@@ -88,23 +88,23 @@ const parseStoredUser = (value: string | null): User | null => {
 export function AuthProvider({ children }: PropsWithChildren) {
   const loginMutation = useLogin()
   const [token, setToken] = useState<string | null>(() =>
-    sessionStorage.getItem(AUTH_TOKEN_KEY)
+    localStorage.getItem(AUTH_TOKEN_KEY)
   )
   const [user, setUser] = useState<User | null>(() =>
-    parseStoredUser(sessionStorage.getItem(AUTH_USER_KEY))
+    parseStoredUser(localStorage.getItem(AUTH_USER_KEY))
   )
   const [error, setError] = useState<string | null>(null)
 
   const saveSession = useCallback((nextToken: string, nextUser: User) => {
-    sessionStorage.setItem(AUTH_TOKEN_KEY, nextToken)
-    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser))
+    localStorage.setItem(AUTH_TOKEN_KEY, nextToken)
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser))
     setToken(nextToken)
     setUser(nextUser)
   }, [])
 
   const clearSession = useCallback(() => {
-    sessionStorage.clear()
-    localStorage.clear()
+    localStorage.removeItem(AUTH_TOKEN_KEY)
+    localStorage.removeItem(AUTH_USER_KEY)
     setToken(null)
     setUser(null)
   }, [])
@@ -115,34 +115,25 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
       try {
         const response = await loginMutation.mutateAsync(credentials)
+        const authPayload = response?.data
 
         const tokenFromApi =
-          response?.Token ||
-          response?.data?.Token ||
-          response?.data?.token ||
-          response?.data?.Token ||
-          response?.token?.data?.token ||
-          response?.data?.token ||
-          response?.token ||
-          response?.accessToken
+          authPayload?.Token ||
+          authPayload?.token ||
+          null
 
         if (!tokenFromApi || typeof tokenFromApi !== 'string') {
           throw new Error('لم يتم استلام رمز التحقق من الخادم')
         }
 
         const userFromApi = {
-          ...(response?.user || {}),
-          ...(response?.data?.user || {}),
-          ...(response?.data || {}),
-          FullName: response?.FullName || response?.data?.FullName,
-          Email: response?.Email || response?.data?.Email || credentials.email,
+          ...(authPayload || {}),
+          FullName: authPayload?.FullName,
+          Email: authPayload?.Email || credentials.email,
           Role:
-            response?.Role ||
-            response?.data?.Role ||
-            response?.data?.Roles?.[0] ||
-            response?.data?.roles?.[0] ||
-            response?.Roles?.[0],
-          Id: response?.Id || response?.data?.Id,
+            authPayload?.Roles?.[0] ||
+            authPayload?.roles?.[0],
+          Id: authPayload?.Id || authPayload?.id,
         }
         const normalizedUser = normalizeUser(userFromApi, credentials.email)
 

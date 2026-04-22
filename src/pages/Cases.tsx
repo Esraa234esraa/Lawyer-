@@ -12,6 +12,8 @@ export default function Cases() {
   const { id } = useParams()
   const [filter, setFilter] = useState<string | null>(null)
 
+  const getTypeLabel = (typeId: number) => `${isArabic ? 'نوع' : 'Type'} ${typeId}`
+
   const caseItem = id ? casesData.find((c) => c.id === parseInt(id)) : null
 
   if (id && caseItem) {
@@ -32,7 +34,7 @@ export default function Cases() {
               >
                 <img
                   src={caseItem.image}
-                  alt={isArabic ? caseItem.titleAr : caseItem.titleEn}
+                  alt={caseItem.titleAr}
                   className="rounded-lg border-2 border-gold/20 w-full"
                 />
               </motion.div>
@@ -45,14 +47,14 @@ export default function Cases() {
               >
                 <div className="mb-4">
                   <span className="text-xs bg-gold/20 text-gold px-3 py-1 rounded-full font-cairo">
-                    {isArabic ? caseItem.typeAr : caseItem.typeEn}
+                    {getTypeLabel(caseItem.typeArId)}
                   </span>
                 </div>
                 <h1 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">
-                  {isArabic ? caseItem.titleAr : caseItem.titleEn}
+                  {caseItem.titleAr}
                 </h1>
                 <p className="text-gray-300 font-cairo mb-6 text-lg">
-                  {isArabic ? caseItem.descriptionAr : caseItem.descriptionEn}
+                  {caseItem.descriptionAr}
                 </p>
 
                 <div className="p-6 bg-primary-black border border-gold/20 rounded-lg mb-6 text-right">
@@ -60,7 +62,7 @@ export default function Cases() {
                     {isArabic ? 'النتيجة' : 'Outcome'}
                   </h3>
                   <p className="text-gray-300 font-cairo">
-                    {isArabic ? caseItem.outcome : caseItem.outcomeEn}
+                    {caseItem.statusAr}
                   </p>
                 </div>
 
@@ -77,9 +79,9 @@ export default function Cases() {
     )
   }
 
-  const categories = [...new Set(casesData.map((c) => c.typeAr))]
+  const categories = [...new Set(casesData.map((c) => getTypeLabel(c.typeArId)))]
   const filteredCases = filter
-    ? casesData.filter((c) => c.typeAr === filter)
+    ? casesData.filter((c) => getTypeLabel(c.typeArId) === filter)
     : casesData
 
   return (
@@ -151,13 +153,13 @@ export default function Cases() {
                 <Link to={`/cases/${caseItem.id}`}>
                   <CaseCard
                     titleAr={caseItem.titleAr}
-                    titleEn={caseItem.titleEn}
+                    titleEn={caseItem.titleAr}
                     descriptionAr={caseItem.descriptionAr}
-                    descriptionEn={caseItem.descriptionEn}
-                    typeAr={caseItem.typeAr}
-                    typeEn={caseItem.typeEn}
+                    descriptionEn={caseItem.descriptionAr}
+                    typeAr={getTypeLabel(caseItem.typeArId)}
+                    typeEn={getTypeLabel(caseItem.typeArId)}
                     yearAr={caseItem.yearAr}
-                    yearEn={caseItem.yearEn}
+                    yearEn={caseItem.yearAr}
                     image={caseItem.image}
                   />
                 </Link>

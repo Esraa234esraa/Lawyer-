@@ -95,6 +95,11 @@ export default function Login() {
                 placeholder="••••••••"
                 required
               />
+              <div className="mt-2 text-right">
+                <Link to="/password-reset" className="text-xs text-gold hover:text-gold-light transition-colors font-cairo">
+                  {isArabic ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
+                </Link>
+              </div>
               <p className="text-xs text-gray-500 mt-2 font-cairo text-right">
                 {isArabic ? 'جرب: admin123 أو client123' : 'Try: admin123 or client123'}
               </p>

@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import PublicLayout from '@/layouts/PublicLayout'
 import AdminLayout from '@/layouts/AdminLayout'
@@ -6,47 +7,50 @@ import ProtectedRoute from '@/routes/ProtectedRoute'
 // import { useAuth } from '@/hooks/useAuth'
 
 // Public Pages
-import Home from '@/pages/Home'
-import Services from '@/pages/Services'
-import About from '@/pages/About'
-import Cases from '@/pages/Cases'
-import News from '@/pages/News'
-import Contact from '@/pages/Contact'
-import Internships from '@/pages/Internships'
-import Jobs from '@/pages/Jobs'
-import FAQ from '@/pages/FAQ'
-import Login from '@/pages/Login'
-import Register from '@/pages/Register'
+const Home = lazy(() => import('@/pages/Home'))
+const Services = lazy(() => import('@/pages/Services'))
+const About = lazy(() => import('@/pages/About'))
+const Cases = lazy(() => import('@/pages/Cases'))
+const News = lazy(() => import('@/pages/News'))
+const Contact = lazy(() => import('@/pages/Contact'))
+const Internships = lazy(() => import('@/pages/Internships'))
+const Jobs = lazy(() => import('@/pages/Jobs'))
+const FAQ = lazy(() => import('@/pages/FAQ'))
+const Login = lazy(() => import('@/pages/Login'))
+const Register = lazy(() => import('@/pages/Register'))
+const PasswordResetPage = lazy(() => import('@/pages/PasswordReset'))
 
 // Admin Pages
-import AdminDashboard from '@/pages/admin/Dashboard'
-import AdminServices from '@/pages/admin/Services'
-import AdminCases from '@/pages/admin/Cases'
-import AdminNews from '@/pages/admin/News'
-import AdminClients from '@/pages/admin/Clients'
-import AdminInternships from '@/pages/admin/Internships'
-import AdminAbout from '@/pages/admin/About'
-import AdminClientsFiles from '@/pages/admin/ClientsFiles'
-import AdminChat from '@/pages/admin/AdminChat'
-import AdminOpportunities from '@/pages/admin/Opportunities'
+const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'))
+const AdminServices = lazy(() => import('@/pages/admin/Services'))
+const AdminCases = lazy(() => import('@/pages/admin/Cases'))
+const AdminCaseDetails = lazy(() => import('@/pages/admin/CaseDetails'))
+const AdminNews = lazy(() => import('@/pages/admin/News'))
+const AdminClients = lazy(() => import('@/pages/admin/Clients'))
+const AdminInternships = lazy(() => import('@/pages/admin/Internships'))
+const AdminAbout = lazy(() => import('@/pages/admin/About'))
+const AdminClientsFiles = lazy(() => import('@/pages/admin/ClientsFiles'))
+const AdminChat = lazy(() => import('@/pages/admin/AdminChat'))
+const AdminOpportunities = lazy(() => import('@/pages/admin/Opportunities'))
 
 // Client Pages
-import ClientDashboard from '@/pages/client/Dashboard'
-import ClientCases from '@/pages/client/Cases'
-import ClientProfile from '@/pages/client/Profile'
-import CaseDetails from "@/pages/client/CaseDetails"
-import ConsultationBookingForm from '@/components/client/ConsultationBookingForm'
-import PaymentPage from '@/components/client/PaymentPage'
-import AdminConsultations from '@/pages/admin/AdminConsultations'
-import CasesAnalysisPage from '@/pages/admin/CasesAnalysisPage'
-import AccountSummaryPage from '@/pages/admin/AccountSummaryPage'
-import CaseTypes from '@/pages/admin/CaseTypes'
+const ClientDashboard = lazy(() => import('@/pages/client/Dashboard'))
+const ClientCases = lazy(() => import('@/pages/client/Cases'))
+const ClientProfile = lazy(() => import('@/pages/client/Profile'))
+const CaseDetails = lazy(() => import('@/pages/client/CaseDetails'))
+const ConsultationBookingForm = lazy(() => import('@/components/client/ConsultationBookingForm'))
+const PaymentPage = lazy(() => import('@/components/client/PaymentPage'))
+const AdminConsultations = lazy(() => import('@/pages/admin/AdminConsultations'))
+const CasesAnalysisPage = lazy(() => import('@/pages/admin/CasesAnalysisPage'))
+const AccountSummaryPage = lazy(() => import('@/pages/admin/AccountSummaryPage'))
+const CaseTypes = lazy(() => import('@/pages/admin/CaseTypes'))
 
 export default function AppRoutes() {
   // const { isAuthenticated, user } = useAuth()
 
   return (
-    <Routes>
+    <Suspense fallback={<div className="text-gray-300 font-cairo p-6" dir="rtl">جاري التحميل...</div>}>
+      <Routes>
       {/* Public Routes */}
       <Route element={<PublicLayout />}>
         <Route path="/" element={<Home />} />
@@ -70,6 +74,7 @@ export default function AppRoutes() {
       {/* Auth Route */}
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/password-reset" element={<PasswordResetPage />} />
 
       {/* Admin Routes */}
       <Route
@@ -82,6 +87,7 @@ export default function AppRoutes() {
         <Route path="/admin/dashboard" element={<AdminDashboard />} />
         <Route path="/admin/services" element={<AdminServices />} />
         <Route path="/admin/cases" element={<AdminCases />} />
+        <Route path="/admin/cases/:id" element={<AdminCaseDetails />} />
         <Route path="/admin/case-types" element={<CaseTypes />} />
         <Route path="/admin/news" element={<AdminNews />} />
         <Route path="/admin/clients" element={<AdminClients />} />
@@ -111,6 +117,7 @@ export default function AppRoutes() {
 
       {/* Catch all - redirect to home */}
       <Route path="*" element={<Navigate to="/" replace />} />
-    </Routes>
+      </Routes>
+    </Suspense>
   )
 }
