@@ -5,7 +5,8 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
 import { toast } from 'sonner'
-import { useAdminStore } from '@/store/adminStore'
+import { useApplyConsultation } from '@/hooks/consultation'
+import barcodeImg from './barcode-consultation.jpeg'
 interface ConsultationBookingFormProps {
   onClose?: () => void
 }
@@ -14,16 +15,18 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
   const { isArabic } = useLanguage()
   const navigate = useNavigate()
   const location = useLocation()
-  const { addConsultation, services } = useAdminStore()
   const pageSpacing = onClose ? '' : 'mt-20 md:mt-28'
+  const { mutate: applyConsultation, isPending: isApplying } = useApplyConsultation()
 
   const steps = [
-    { id: 1, titleAr: 'الدفع', titleEn: 'Payment' },
+    { id: 1, titleAr: 'الدفع عبر الباركود', titleEn: 'Pay via Barcode' },
     { id: 2, titleAr: 'إيصال الدفع', titleEn: 'Receipt Upload' },
     { id: 3, titleAr: 'بيانات الدعوى', titleEn: 'Case Details' },
     { id: 4, titleAr: 'المرفقات ونص الشكوى', titleEn: 'Attachments & Complaint' },
   ]
 
+  // TODO: Replace with backend fetch if needed
+  const services = [] // Placeholder, should be fetched from backend if not already
   const consultationOptions = services.map((service) => ({
     key: String(service.id),
     nameAr: service.titleAr,
@@ -130,51 +133,38 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
 
   const validateStep = (step: number) => {
     if (step === 1) {
+      // Always allow moving from barcode to receipt upload
       return true
     }
-
     if (step === 2) {
-      if (!paymentCompleted) {
-        toast.error(isArabic ? 'يرجى إتمام الدفع أولاً' : 'Please complete payment first')
-        return false
-      }
-
       if (!receiptFile) {
         toast.error(isArabic ? 'يرجى رفع صورة الإيصال' : 'Please upload the payment receipt')
         return false
       }
-
       return true
     }
-
     if (step === 3) {
       if (!formData.name || !formData.email || !formData.phone || !formData.nationalAddress || !formData.nationalId || !formData.service) {
         toast.error(isArabic ? 'يرجى استكمال بيانات الدعوى المطلوبة' : 'Please complete the required case details')
         return false
       }
-
       return true
     }
-
     if (step === 4) {
       if (!formData.details.trim()) {
         toast.error(isArabic ? 'يرجى كتابة نص الشكوى' : 'Please enter the complaint text')
         return false
       }
-
       if (caseFiles.length < 2) {
         toast.error(isArabic ? 'الحد الأدنى ملفين لمرفقات الدعوى' : 'At least 2 case files are required')
         return false
       }
-
       if (caseFiles.length > 10) {
         toast.error(isArabic ? 'الحد الأقصى 10 ملفات' : 'Maximum 10 files allowed')
         return false
       }
-
       return true
     }
-
     return false
   }
 
@@ -209,52 +199,29 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
     if (!validateStep(4)) return
 
     setIsLoading(true)
-
     try {
-      await new Promise((resolve) => setTimeout(resolve, 1500))
-
-      const caseAttachmentFiles = await Promise.all(
-        caseFiles.map(async (file) => ({
-          name: file.name,
-          type: file.type,
-          dataUrl: await fileToDataUrl(file),
-        }))
-      )
-
-      const selectedConsultation = consultationOptions.find((option) => option.key === formData.consultationKey)
-
-      addConsultation({
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        consultationName: selectedConsultation
-          ? isArabic
-            ? selectedConsultation.nameAr
-            : selectedConsultation.nameEn
-          : undefined,
-        paidAmountSar:
-          (location.state as { servicePriceSar?: number } | null)?.servicePriceSar ||
-          selectedConsultation?.amountSar ||
-          750,
-        service: formData.service,
-        details: formData.details,
-        attachment: receiptFile?.name,
-        nationalAddress: formData.nationalAddress,
-        nationalId: formData.nationalId,
-        paymentReceiptName: receiptFile?.name,
-        paymentStatus: 'paid',
-        paymentMethod: isArabic ? 'دفع يدوي مع إيصال' : 'Manual payment with receipt',
-        paymentReference: receiptFile?.name,
-        paymentReceiptDataUrl: receiptPreview,
-        paymentReceiptType: receiptFile?.type,
-        caseAttachments: caseFiles.map((file) => file.name),
-        caseAttachmentFiles,
+      // Call backend mutation for consultation request
+      await new Promise((resolve, reject) => {
+        applyConsultation(
+          {
+            fullName: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            paymentReceiptPath: receiptFile!,
+          },
+          {
+            onSuccess: () => {
+              setSubmitted(true)
+              toast.success(isArabic ? 'تم إرسال طلب الاستشارة بنجاح' : 'Consultation request submitted successfully')
+              resolve(true)
+            },
+            onError: (err: any) => {
+              toast.error(err?.message || (isArabic ? 'تعذر إرسال الطلب' : 'Failed to submit request'))
+              reject(err)
+            },
+          }
+        )
       })
-
-      setSubmitted(true)
-      toast.success(isArabic ? 'تم إرسال طلب الاستشارة بنجاح' : 'Consultation request submitted successfully')
-    } catch {
-      toast.error(isArabic ? 'تعذر رفع مرفقات الدعوى، حاول مرة أخرى' : 'Failed to process case attachments, please try again')
     } finally {
       setIsLoading(false)
     }
@@ -340,58 +307,27 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
 
       <form onSubmit={handleSubmit} className="space-y-6">
         {currentStep === 1 && (
-          <div className="space-y-6">
-            <div>
-              <label className="label-gold">
-                {isArabic ? 'نوع الاستشارة *' : 'Consultation Type *'}
-              </label>
-              <select
-                name="consultationKey"
-                value={formData.consultationKey}
-                onChange={(e) => setFormData((prev) => ({ ...prev, consultationKey: e.target.value }))}
-                className="input-gold"
-                required
-              >
-                <option value="">{isArabic ? 'اختر الاستشارة' : 'Select consultation'}</option>
-                {consultationOptions.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {(isArabic ? option.nameAr : option.nameEn) + ` - ${option.amountSar} SAR`}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="p-6 rounded-xl border border-gold/20 bg-charcoal">
-              <p className="text-sm text-gray-400 font-cairo mb-2">
-                {isArabic ? 'رسوم حجز الاستشارة' : 'Consultation booking fee'}
-              </p>
-              <div className="flex items-end justify-between gap-4">
-                <div>
-                  <h3 className="text-3xl font-cairo font-bold text-gold">
-                    {consultationOptions.find((option) => option.key === formData.consultationKey)?.amountSar || 750} {isArabic ? 'ر.س' : 'SAR'}
+          <div className="space-y-6 flex flex-col items-center justify-center">
+            <div className="flex flex-col items-center">
+              {/* Show service name and price if available */}
+              {formData.service && (
+                <>
+                  <h3 className="text-xl font-cairo font-bold text-gold mb-1 text-center">
+                    {isArabic ? 'الخدمة:' : 'Service:'} {formData.service}
                   </h3>
-                  <p className="text-gray-400 font-cairo mt-2">
-                    {isArabic
-                      ? 'يتم الدفع أولاً قبل استكمال بيانات الدعوى ومرفقاتها.'
-                      : 'Payment must be completed before submitting case details and attachments.'}
+                  <p className="text-lg font-cairo text-gold-light mb-2 text-center">
+                    {isArabic ? 'المبلغ:' : 'Amount:'} {consultationOptions.find(opt => opt.key === formData.consultationKey)?.amountSar || 750} {isArabic ? 'ر.س' : 'SAR'}
                   </p>
-                  <p className="text-gold font-cairo mt-2 font-semibold">
-                    {isArabic
-                      ? 'تنبيه: رسوم حجز الاستشارة غير مستردة بعد الدفع.'
-                      : 'Notice: Consultation booking fee is non-refundable after payment.'}
-                  </p>
-                </div>
-                <div className="hidden md:block text-right text-gray-300 font-cairo text-sm max-w-xs">
-                  {isArabic
-                    ? 'بعد تأكيد الدفع ستنتقل مباشرة إلى رفع صورة الإيصال ثم بيانات الدعوى.'
-                    : 'After payment confirmation, you will proceed to receipt upload and case details.'}
-                </div>
-              </div>
+                </>
+              )}
+              <img src={barcodeImg} alt="barcode" className="w-56 h-56 rounded-lg border-2 border-gold/30 bg-white" />
+              <p className="mt-4 text-lg text-gold font-cairo font-bold text-center">
+                {isArabic ? 'يرجى مسح الباركود أعلاه والدفع عبر التطبيق البنكي، ثم اضغط متابعة لرفع إيصال الدفع.' : 'Please scan the barcode above and pay via your banking app, then click continue to upload the payment receipt.'}
+              </p>
             </div>
-
             <Button
               type="button"
-              onClick={handleConfirmPayment}
+              onClick={() => setCurrentStep(2)}
               className="w-full font-cairo py-5 text-lg bg-gradient-to-r from-gold to-gold-light text-black rounded-xl shadow-xl hover:scale-105 transition-all duration-300"
             >
               {isArabic ? 'تم الدفع - المتابعة' : 'Payment done - Continue'}
@@ -611,7 +547,7 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
           ) : (
             <Button
               type="submit"
-              isLoading={isLoading}
+              isLoading={isLoading || isApplying}
               className="flex-1 font-cairo py-4 bg-gradient-to-r from-gold to-gold-light text-black rounded-xl shadow-xl hover:scale-105 transition-all duration-300"
             >
               {isArabic ? 'إرسال الطلب' : 'Submit Request'}

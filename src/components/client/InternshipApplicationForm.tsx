@@ -3,31 +3,31 @@ import { useState } from 'react'
 import { Upload, X } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAdminStore, Internship } from '@/store/adminStore'
+import { useAddApplication } from '@/hooks/applications'
+import { ApplicationSubmitInput, HiringAndTraningType } from '@/types/application'
 import { toast } from 'sonner'
 
 interface InternshipApplicationFormProps {
-  internship: Internship
+  hiringAndTraningType: HiringAndTraningType
   onClose: () => void
 }
 
 export default function InternshipApplicationForm({
-  internship,
+  hiringAndTraningType,
   onClose,
 }: InternshipApplicationFormProps) {
   const { isArabic } = useLanguage()
-  const { addApplication } = useAdminStore()
+  const addApplicationMutation = useAddApplication()
   const [formData, setFormData] = useState({
-    name: '',
+    fullNmae: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     university: '',
-    major: '',
+    specialty: '',
     gpa: '',
-    resume: null as File | null,
-    coverLetter: '',
+    cvPath: null as File | null,
+    massegeApplication: '',
   })
-  const [isLoading, setIsLoading] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -42,7 +42,7 @@ export default function InternshipApplicationForm({
     if (file) {
       setFormData((prev) => ({
         ...prev,
-        resume: file,
+        cvPath: file,
       }))
       toast.success(isArabic ? `تم تحميل: ${file.name}` : `Uploaded: ${file.name}`)
     }
@@ -51,31 +51,50 @@ export default function InternshipApplicationForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!formData.resume) {
+    if (!formData.fullNmae.trim()) {
+      toast.error(isArabic ? 'الاسم الكامل مطلوب' : 'Full name is required')
+      return
+    }
+
+    if (!formData.email.trim()) {
+      toast.error(isArabic ? 'البريد الإلكتروني مطلوب' : 'Email is required')
+      return
+    }
+
+    if (!formData.phoneNumber.trim()) {
+      toast.error(isArabic ? 'رقم الهاتف مطلوب' : 'Phone number is required')
+      return
+    }
+
+    if (!formData.cvPath) {
       toast.error(isArabic ? 'يرجى تحميل السيرة الذاتية' : 'Please upload resume')
       return
     }
 
-    setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
+    const payload: ApplicationSubmitInput = {
+      fullNmae: formData.fullNmae.trim(),
+      email: formData.email.trim(),
+      phoneNumber: formData.phoneNumber.trim(),
+      university: formData.university.trim(),
+      specialty: formData.specialty.trim(),
+      gpa: formData.gpa.trim(),
+      cvPath: formData.cvPath,
+      massegeApplication: formData.massegeApplication.trim(),
+      hiringAndTraningType,
+    }
 
-    addApplication({
-      internshipId: internship.id,
-      internshipTitleAr: internship.titleAr,
-      name: formData.name,
-      email: formData.email,
-      phone: formData.phone,
-      university: formData.university,
-      major: formData.major,
-      gpa: formData.gpa,
-      resumeName: formData.resume.name,
-      coverLetter: formData.coverLetter,
-      submittedAt: new Date().toISOString().split('T')[0],
-      status: 'pending',
+    await addApplicationMutation.mutateAsync(payload)
+
+    setFormData({
+      fullNmae: '',
+      email: '',
+      phoneNumber: '',
+      university: '',
+      specialty: '',
+      gpa: '',
+      cvPath: null,
+      massegeApplication: '',
     })
-
-    toast.success(isArabic ? 'تم استقبال طلبك' : 'Application received')
-    setIsLoading(false)
     onClose()
   }
 
@@ -108,8 +127,8 @@ export default function InternshipApplicationForm({
             </label>
             <input
               type="text"
-              name="name"
-              value={formData.name}
+              name="fullNmae"
+              value={formData.fullNmae}
               onChange={handleChange}
               required
               className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
@@ -137,8 +156,8 @@ export default function InternshipApplicationForm({
             </label>
             <input
               type="tel"
-              name="phone"
-              value={formData.phone}
+              name="phoneNumber"
+              value={formData.phoneNumber}
               onChange={handleChange}
               required
               className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
@@ -166,8 +185,8 @@ export default function InternshipApplicationForm({
             </label>
             <input
               type="text"
-              name="major"
-              value={formData.major}
+              name="specialty"
+              value={formData.specialty}
               onChange={handleChange}
               required
               className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
@@ -205,7 +224,7 @@ export default function InternshipApplicationForm({
             />
             <Upload size={20} className="text-gold" />
             <span className="text-gold font-cairo">
-              {formData.resume ? formData.resume.name : (isArabic ? 'اختر الملف' : 'Choose file')}
+              {formData.cvPath ? formData.cvPath.name : (isArabic ? 'اختر الملف' : 'Choose file')}
             </span>
           </label>
         </div>
@@ -215,8 +234,8 @@ export default function InternshipApplicationForm({
             {isArabic ? 'رسالة التقديم' : 'Cover Letter'}
           </label>
           <textarea
-            name="coverLetter"
-            value={formData.coverLetter}
+            name="massegeApplication"
+            value={formData.massegeApplication}
             onChange={handleChange}
             rows={4}
             className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
@@ -225,13 +244,14 @@ export default function InternshipApplicationForm({
         </div>
 
         <div className="flex gap-4">
-          <Button type="submit" variant="primary" isLoading={isLoading} className="flex-1 font-cairo">
+          <Button type="submit" variant="primary" isLoading={addApplicationMutation.isPending} disabled={addApplicationMutation.isPending} className="flex-1 font-cairo">
             {isArabic ? 'إرسال' : 'Submit'}
           </Button>
           <Button
             type="button"
             variant="secondary"
             onClick={onClose}
+            disabled={addApplicationMutation.isPending}
             className="flex-1 font-cairo"
           >
             {isArabic ? 'إلغاء' : 'Cancel'}

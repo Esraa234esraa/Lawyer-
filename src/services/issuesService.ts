@@ -24,6 +24,23 @@ const pickFirstString = (values: Array<unknown>): string | undefined => {
   return undefined
 }
 
+const pickFirstNumber = (values: Array<unknown>): number | undefined => {
+  for (const value of values) {
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      return value
+    }
+
+    if (typeof value === 'string' && value.trim().length > 0) {
+      const parsed = Number(value)
+      if (Number.isFinite(parsed)) {
+        return parsed
+      }
+    }
+  }
+
+  return undefined
+}
+
 const normalizeIssueAttachment = (raw: unknown): { filePath: string } | null => {
   if (!raw || typeof raw !== 'object') return null
   const source = raw as Record<string, unknown>
@@ -32,11 +49,11 @@ const normalizeIssueAttachment = (raw: unknown): { filePath: string } | null => 
   return { filePath }
 }
 
-const normalizeIssueClient = (raw: unknown): { name: string; nationalId: string; nationalIdentityPath?: string } | null => {
+const normalizeIssueClient = (raw: unknown): { name: string; nationalId: number; nationalIdentityPath?: string } | null => {
   if (!raw || typeof raw !== 'object') return null
   const source = raw as Record<string, unknown>
   const name = pickFirstString([source.name, source.Name])
-  const nationalId = pickFirstString([source.nationalId, source.NationalId])
+  const nationalId = pickFirstNumber([source.nationalId, source.NationalId])
   const nationalIdentityPath = pickFirstString([
     source.nationalIdentityPath,
     source.NationalIdentityPath,
@@ -44,7 +61,7 @@ const normalizeIssueClient = (raw: unknown): { name: string; nationalId: string;
     source.NationalIdentity,
   ])
 
-  if (!name || !nationalId) return null
+  if (!name || nationalId === undefined || Number.isNaN(nationalId)) return null
   return {
     name,
     nationalId,
@@ -145,43 +162,57 @@ export const buildIssueFormData = (input: IssueSubmitInput): FormData => {
   const formData = new FormData()
 
   formData.append('TiteleAr', input.titeleAr)
-  if (input.titeleEn) {
-    formData.append('TiteleEn', input.titeleEn)
-  }
+  formData.append('TiteleEn', input.titeleEn || '')
   formData.append('IssueTypeId', input.issueTypeId)
   formData.append('Defendant', input.defendant)
 
   input.issueAttachmentFiles.forEach((file) => {
-    formData.append('issueAttachmentDTOs', file)
+    formData.append('IssueAttachmentDTOs', file, file.name)
   })
 
   input.issueClients.forEach((client, index) => {
     formData.append(`IssueClients[${index}].name`, client.name)
-    formData.append(`IssueClients[${index}].nationalId`, client.nationalId)
     if (client.nationalIdentityFile) {
-      formData.append(`IssueClients[${index}].nationalIdentityPath`, client.nationalIdentityFile)
+      formData.append(
+        `IssueClients[${index}].nationalIdentityPath`,
+        client.nationalIdentityFile,
+        client.nationalIdentityFile.name
+      )
+    } else {
+      formData.append(`IssueClients[${index}].nationalIdentityPath`, client.nationalIdentityPath || '')
     }
+    formData.append(`IssueClients[${index}].nationalId`, String(client.nationalId))
   })
 
   return formData
 }
 
-export const addIssue = async (formData: FormData): Promise<ApiResponse<string>> => {
+export const addIssue = async (payload: IssueSubmitInput): Promise<ApiResponse<string>> => {
   try {
-    const response = await axiosInstance.post<ApiResponse<string>>(`${BASE_URL}/AddIssueAsync`, formData)
+    const formData = buildIssueFormData(payload)
+    const response = await axiosInstance.post<ApiResponse<string>>(`${BASE_URL}/AddIssueAsync`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return assertSuccess(response.data)
   } catch (error) {
     throw new Error(getApiErrorMessage(error))
   }
 }
 
-export const updateIssue = async (id: string, formData: FormData): Promise<ApiResponse<boolean>> => {
+export const updateIssue = async (id: string, payload: IssueSubmitInput): Promise<ApiResponse<boolean>> => {
   if (!isValidGuid(id)) {
     throw new Error('Issue ID غير صالح')
   }
 
   try {
-    const response = await axiosInstance.put<ApiResponse<boolean>>(`${BASE_URL}/UpdateIssueAsync/${id}`, formData)
+    const formData = buildIssueFormData(payload)
+    const response = await axiosInstance.put<ApiResponse<boolean>>(`${BASE_URL}/UpdateIssueAsync/${id}`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    })
     return assertSuccess(response.data)
   } catch (error) {
     throw new Error(getApiErrorMessage(error))

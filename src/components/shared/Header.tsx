@@ -31,7 +31,7 @@ export default function Header() {
         <div className="container-max py-2.5 md:py-3 px-3 md:px-5">
         <div className="flex items-center justify-start lg:justify-between gap-3">
           {/* Logo */}
-          <Link to="/" onClick={() => setIsOpen(false)} className="hidden lg:block">
+          <Link to="/" onClick={() => setIsOpen(false)} className={isAdminArea ? 'block' : 'hidden lg:block'}>
             <motion.div
               whileHover={{ scale: 1.05 }}
               className="flex items-center gap-2 md:gap-3 font-cairo text-lg md:text-2xl font-bold text-gold"

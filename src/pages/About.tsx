@@ -1,10 +1,21 @@
 import { motion } from 'framer-motion'
 // import TeamCard from '@/components/ui/TeamCard'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useGetWhoAreWe } from '@/hooks/whoAreWe'
 import { aboutData } from '@/data/mockData'
 
 export default function About() {
   const { isArabic } = useLanguage()
+  const { data, isLoading } = useGetWhoAreWe()
+  const whoAreWe = data?.data
+
+  const visionContent = isArabic
+    ? whoAreWe?.visionAr || aboutData.vision
+    : whoAreWe?.visionEn || whoAreWe?.visionAr || aboutData.visionEn
+
+  const messageContent = isArabic
+    ? whoAreWe?.messageAr || aboutData.mission
+    : whoAreWe?.messageEn || whoAreWe?.messageAr || aboutData.missionEn
 
   return (
     <div dir="rtl" className="pt-24">
@@ -43,7 +54,11 @@ export default function About() {
                 {isArabic ? 'رؤيتنا' : 'Our Vision'}
               </h2>
               <p className="text-gray-300 font-cairo text-lg">
-                {isArabic ? aboutData.vision : aboutData.visionEn}
+                {isLoading
+                  ? isArabic
+                    ? 'جاري تحميل البيانات...'
+                    : 'Loading data...'
+                  : visionContent}
               </p>
             </motion.div>
 
@@ -58,7 +73,11 @@ export default function About() {
                 {isArabic ? 'رسالتنا' : 'Our Mission'}
               </h2>
               <p className="text-gray-300 font-cairo text-lg">
-                {isArabic ? aboutData.mission : aboutData.missionEn}
+                {isLoading
+                  ? isArabic
+                    ? 'جاري تحميل البيانات...'
+                    : 'Loading data...'
+                  : messageContent}
               </p>
             </motion.div>
           </div>

@@ -1,62 +1,153 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
-import { Plus, Edit2, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
+import { Plus, Edit2, Trash2, Eye } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import Modal from '@/components/admin/Modal'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAdminStore, Internship, Job } from '@/store/adminStore'
+import { useAddOffer, useDeleteOffer, useGetAllOffers, useGetOfferById, useUpdateOffer } from '@/hooks/offers'
+import { Offer, OfferSubmitInput } from '@/types/offer'
 import { toast } from 'sonner'
 
-// Union type مع حقل kind لتسهيل type narrowing
-type OpportunityFormData =
-  | (Partial<Internship> & { kind: 'internship' })
-  | (Partial<Job> & { kind: 'job' })
+interface OpportunityFormData {
+  nameAr: string
+  nameEn: string
+  description: string
+  duration: string
+  award: string
+  salary: string
+  location: string
+  requirements: string
+  jobType: string
+}
+
+const defaultFormData: OpportunityFormData = {
+  nameAr: '',
+  nameEn: '',
+  description: '',
+  duration: '',
+  award: '',
+  salary: '',
+  location: '',
+  requirements: '',
+  jobType: '',
+}
+
+const mapOfferToFormData = (offer: Offer): OpportunityFormData => ({
+  nameAr: offer.nameAr,
+  nameEn: offer.nameEn,
+  description: offer.description,
+  duration: offer.duration,
+  award: offer.award,
+  salary: offer.salary,
+  location: offer.location,
+  requirements: offer.requirements,
+  jobType: offer.type === 'Training' ? '' : offer.type,
+})
 
 export default function AdminOpportunities() {
   const { isArabic } = useLanguage()
-  const {
-    internships,
-    jobs,
-    addInternship,
-    updateInternship,
-    deleteInternship,
-    addJob,
-    updateJob,
-    deleteJob,
-  } = useAdminStore()
-
   const [activeTab, setActiveTab] = useState<'internships' | 'jobs'>('internships')
-  const [isModalOpen, setIsModalOpen] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [itemToDelete, setItemToDelete] = useState<Internship | Job | null>(null)
-  const [formData, setFormData] = useState<OpportunityFormData>({ kind: 'internship' })
+  const hiringAndTraning = activeTab === 'internships' ? 2 : 1
+  const { data, isLoading, isFetching } = useGetAllOffers(hiringAndTraning)
+  const addOfferMutation = useAddOffer()
+  const updateOfferMutation = useUpdateOffer()
+  const deleteOfferMutation = useDeleteOffer()
 
-  const handleOpenModal = (item?: Internship | Job) => {
-    if (activeTab === 'internships') {
-      if (item && 'duration' in item) {
-        setFormData({ ...item, kind: 'internship' })
-        setEditingId(item.id)
-      } else {
-        setFormData({ kind: 'internship' })
-        setEditingId(null)
-      }
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false)
+  const [editingItem, setEditingItem] = useState<Offer | null>(null)
+  const [detailsItemId, setDetailsItemId] = useState<string>('')
+  const [itemToDelete, setItemToDelete] = useState<Offer | null>(null)
+  const [formData, setFormData] = useState<OpportunityFormData>(defaultFormData)
+
+  const {
+    data: detailsResponse,
+    isLoading: isDetailsLoading,
+    isFetching: isDetailsFetching,
+  } = useGetOfferById(detailsItemId, hiringAndTraning, isDetailsModalOpen && Boolean(detailsItemId))
+
+  const detailsItem = detailsResponse?.data
+
+  const offers = data?.data || []
+  const internships = useMemo(() => offers, [offers])
+  const jobs = useMemo(() => offers, [offers])
+
+  const isPending =
+    addOfferMutation.isPending ||
+    updateOfferMutation.isPending ||
+    deleteOfferMutation.isPending
+
+  const validateFormData = (input: OpportunityFormData): string | null => {
+    if (!input.nameAr.trim()) {
+      return isArabic ? 'الاسم بالعربية مطلوب' : 'Arabic name is required'
+    }
+    if (!input.description.trim()) {
+      return isArabic ? 'الوصف مطلوب' : 'Description is required'
+    }
+    if (activeTab === 'internships' && !input.duration.trim()) {
+      return isArabic ? 'المدة مطلوبة للتدريب' : 'Duration is required for training'
+    }
+    if (activeTab === 'internships' && !input.award.trim()) {
+      return isArabic ? 'المكافأة مطلوبة للتدريب' : 'Award is required for training'
+    }
+    if (activeTab === 'jobs' && !input.location.trim()) {
+      return isArabic ? 'الموقع مطلوب للوظيفة' : 'Location is required for job'
+    }
+    if (activeTab === 'jobs' && !input.salary.trim()) {
+      return isArabic ? 'الراتب مطلوب للوظيفة' : 'Salary is required for job'
+    }
+    if (activeTab === 'jobs' && !input.jobType.trim()) {
+      return isArabic ? 'نوع الوظيفة مطلوب' : 'Job type is required'
+    }
+    return null
+  }
+
+  const toOfferPayload = (input: OpportunityFormData): OfferSubmitInput => ({
+    nameAr: input.nameAr.trim(),
+    nameEn: input.nameEn.trim(),
+    description: input.description.trim(),
+    duration: activeTab === 'internships' ? input.duration.trim() : '',
+    award: activeTab === 'internships' ? input.award.trim() : '',
+    salary: activeTab === 'jobs' ? input.salary.trim() : '',
+    location: activeTab === 'jobs' ? input.location.trim() : '',
+    requirements: input.requirements.trim(),
+    type: activeTab === 'internships' ? 'Training' : input.jobType.trim(),
+    hiringAndTraning: activeTab === 'internships' ? 2 : 1,
+  })
+
+  const handleOpenModal = (item?: Offer) => {
+    if (item) {
+      setEditingItem(item)
+      setFormData(mapOfferToFormData(item))
     } else {
-      if (item && 'salary' in item) {
-        setFormData({ ...item, kind: 'job' })
-        setEditingId(item.id)
-      } else {
-        setFormData({ kind: 'job' })
-        setEditingId(null)
-      }
+      setEditingItem(null)
+      setFormData({
+        ...defaultFormData,
+        jobType: activeTab === 'jobs' ? 'Full Time' : '',
+      })
     }
     setIsModalOpen(true)
   }
 
   const handleCloseModal = () => {
+    if (isPending) return
     setIsModalOpen(false)
-    setEditingId(null)
-    setFormData(activeTab === 'internships' ? { kind: 'internship' } : { kind: 'job' })
+    setEditingItem(null)
+    setFormData({
+      ...defaultFormData,
+      jobType: activeTab === 'jobs' ? 'Full Time' : '',
+    })
+  }
+
+  const handleOpenDetailsModal = (itemId: string) => {
+    setDetailsItemId(itemId)
+    setIsDetailsModalOpen(true)
+  }
+
+  const handleCloseDetailsModal = () => {
+    setIsDetailsModalOpen(false)
+    setDetailsItemId('')
   }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -67,70 +158,40 @@ export default function AdminOpportunities() {
     }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (activeTab === 'internships') {
-      if (editingId && formData.kind === 'internship') {
-        updateInternship(editingId, formData)
-        toast.success(isArabic ? 'تم تحديث التدريب' : 'Internship updated')
-      } else if (formData.kind === 'internship') {
-        addInternship({
-          titleAr: formData.titleAr || '',
-          titleEn: formData.titleEn || '',
-          descriptionAr: formData.descriptionAr || '',
-          descriptionEn: formData.descriptionEn || '',
-          detailsAr: formData.detailsAr || '',
-          detailsEn: formData.detailsEn || '',
-          requirements: [],
-          duration: formData.duration || '',
-          stipend: formData.stipend || '',
-          createdAt: new Date().toISOString().split('T')[0],
-          status: 'active',
-        })
-        toast.success(isArabic ? 'تم إضافة التدريب' : 'Internship added')
-      }
+    const validationError = validateFormData(formData)
+    if (validationError) {
+      toast.error(validationError)
+      return
+    }
+
+    const payload = toOfferPayload(formData)
+
+    if (editingItem) {
+      await updateOfferMutation.mutateAsync({
+        id: editingItem.id,
+        payload,
+      })
     } else {
-      if (editingId && formData.kind === 'job') {
-        updateJob(editingId, formData)
-        toast.success(isArabic ? 'تم تحديث الوظيفة' : 'Job updated')
-      } else if (formData.kind === 'job') {
-        addJob({
-          titleAr: formData.titleAr || '',
-          titleEn: formData.titleEn || '',
-          descriptionAr: formData.descriptionAr || '',
-          descriptionEn: formData.descriptionEn || '',
-          detailsAr: formData.detailsAr || '',
-          detailsEn: formData.detailsEn || '',
-          requirements: [],
-          salary: formData.salary || '',
-          location: formData.location || '',
-          type: formData.type || '',
-          createdAt: new Date().toISOString().split('T')[0],
-          status: 'active',
-        })
-        toast.success(isArabic ? 'تم إضافة الوظيفة' : 'Job added')
-      }
+      await addOfferMutation.mutateAsync(payload)
     }
 
     handleCloseModal()
   }
 
-  const handleDeleteConfirm = () => {
+  const handleDeleteConfirm = async () => {
     if (!itemToDelete) return
 
-    if ('duration' in itemToDelete) {
-      deleteInternship(itemToDelete.id)
-      toast.success(isArabic ? 'تم حذف التدريب' : 'Internship deleted')
-    } else {
-      deleteJob(itemToDelete.id)
-      toast.success(isArabic ? 'تم حذف الوظيفة' : 'Job deleted')
-    }
+    await deleteOfferMutation.mutateAsync(itemToDelete.id)
 
     setItemToDelete(null)
   }
 
-  const items = activeTab === 'internships' ? internships : jobs
+  const items = activeTab === 'internships'
+    ? internships.filter((item) => item.hiringAndTraning === 2)
+    : jobs.filter((item) => item.hiringAndTraning === 1)
 
   return (
     <div dir="rtl">
@@ -156,8 +217,13 @@ export default function AdminOpportunities() {
               ? `إجمالي ${activeTab === 'internships' ? 'البرامج' : 'الوظائف'}: ${items.length}`
               : `Total ${activeTab === 'internships' ? 'Internships' : 'Jobs'}: ${items.length}`}
           </p>
+          {isFetching && (
+            <p className="text-gray-500 font-cairo text-xs mt-1">
+              {isArabic ? 'جاري تحديث البيانات...' : 'Refreshing data...'}
+            </p>
+          )}
         </div>
-        <Button onClick={() => handleOpenModal()} variant="primary" size="lg" className="font-cairo flex-row-reverse ms-auto">
+        <Button onClick={() => handleOpenModal()} variant="primary" size="lg" className="font-cairo flex-row-reverse ms-auto" disabled={isPending}>
           <Plus size={20} className="me-2" />
           {activeTab === 'internships'
             ? isArabic
@@ -193,6 +259,12 @@ export default function AdminOpportunities() {
         </button>
       </div>
 
+      {isLoading && (
+        <div className="mb-4 text-gray-300 font-cairo text-sm text-right">
+          {isArabic ? 'جاري تحميل العروض...' : 'Loading offers...'}
+        </div>
+      )}
+
       {/* Items List */}
       <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }} className="space-y-4">
         {items.length === 0 ? (
@@ -211,12 +283,17 @@ export default function AdminOpportunities() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 text-right">
                   <h3 className="text-heading-3 font-cairo font-bold text-gold mb-2">
-                    {isArabic ? item.titleAr : item.titleEn}
+                    {isArabic ? item.nameAr : item.nameEn || item.nameAr}
                   </h3>
                   <p className="text-gray-300 font-cairo mb-2">
-                    {isArabic ? item.descriptionAr : item.descriptionEn}
+                    {item.description}
                   </p>
-                  {item.status === 'active' && (
+                  {item.location && (
+                    <p className="text-gray-400 font-cairo text-sm mb-2">
+                      {isArabic ? 'الموقع:' : 'Location:'} {item.location}
+                    </p>
+                  )}
+                  {item.isActive !== false && (
                     <span className="inline-block px-3 py-1 bg-green-500/20 text-green-400 rounded text-xs font-cairo font-semibold">
                       ✓ {isArabic ? 'نشط' : 'Active'}
                     </span>
@@ -224,10 +301,13 @@ export default function AdminOpportunities() {
                 </div>
 
                 <div className="flex gap-2">
-                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleOpenModal(item)} className="p-2 bg-gold/20 text-gold rounded-lg hover:bg-gold/30">
+                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleOpenDetailsModal(item.id)} className="p-2 bg-blue-500/20 text-blue-300 rounded-lg hover:bg-blue-500/30">
+                    <Eye size={18} />
+                  </motion.button>
+                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => handleOpenModal(item)} disabled={isPending} className="p-2 bg-gold/20 text-gold rounded-lg hover:bg-gold/30 disabled:opacity-50 disabled:cursor-not-allowed">
                     <Edit2 size={18} />
                   </motion.button>
-                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => setItemToDelete(item)} className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30">
+                  <motion.button whileHover={{ scale: 1.1 }} onClick={() => setItemToDelete(item)} disabled={isPending} className="p-2 bg-red-500/20 text-red-400 rounded-lg hover:bg-red-500/30 disabled:opacity-50 disabled:cursor-not-allowed">
                     <Trash2 size={18} />
                   </motion.button>
                 </div>
@@ -246,17 +326,85 @@ export default function AdminOpportunities() {
         itemLabel={
           itemToDelete
             ? isArabic
-              ? itemToDelete.titleAr
-              : itemToDelete.titleEn
+              ? itemToDelete.nameAr
+              : itemToDelete.nameEn || itemToDelete.nameAr
             : undefined
         }
       />
+
+      <Modal
+        isOpen={isDetailsModalOpen}
+        onClose={handleCloseDetailsModal}
+        title={activeTab === 'internships' ? 'Training Details' : 'Job Details'}
+        titleAr={activeTab === 'internships' ? 'تفاصيل التدريب' : 'تفاصيل الوظيفة'}
+      >
+        <div className="space-y-4 text-right" dir="rtl">
+          {(isDetailsLoading || isDetailsFetching) && (
+            <p className="text-gray-300 font-cairo text-sm">
+              {isArabic ? 'جاري تحميل التفاصيل...' : 'Loading details...'}
+            </p>
+          )}
+
+          {!isDetailsLoading && !isDetailsFetching && detailsItem && (
+            <>
+              <div>
+                <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'العنوان' : 'Title'}</p>
+                <p className="text-gold font-cairo font-semibold">{isArabic ? detailsItem.nameAr : detailsItem.nameEn || detailsItem.nameAr}</p>
+              </div>
+
+              <div>
+                <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'الوصف' : 'Description'}</p>
+                <p className="text-gray-200 font-cairo">{detailsItem.description || '-'}</p>
+              </div>
+
+              {activeTab === 'internships' ? (
+                <>
+                  <div>
+                    <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'المدة' : 'Duration'}</p>
+                    <p className="text-gray-200 font-cairo">{detailsItem.duration || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'المكافأة' : 'Award'}</p>
+                    <p className="text-gray-200 font-cairo">{detailsItem.award || '-'}</p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div>
+                    <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'الراتب' : 'Salary'}</p>
+                    <p className="text-gray-200 font-cairo">{detailsItem.salary || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'نوع الوظيفة' : 'Job Type'}</p>
+                    <p className="text-gray-200 font-cairo">{detailsItem.type || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'الموقع' : 'Location'}</p>
+                    <p className="text-gray-200 font-cairo">{detailsItem.location || '-'}</p>
+                  </div>
+                </>
+              )}
+
+              <div>
+                <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'المتطلبات' : 'Requirements'}</p>
+                <p className="text-gray-200 font-cairo whitespace-pre-line">{detailsItem.requirements || '-'}</p>
+              </div>
+            </>
+          )}
+
+          {!isDetailsLoading && !isDetailsFetching && !detailsItem && (
+            <p className="text-gray-400 font-cairo text-sm">
+              {isArabic ? 'لا توجد تفاصيل متاحة' : 'No details available'}
+            </p>
+          )}
+        </div>
+      </Modal>
 
       {/* Modal */}
       <Modal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        title={activeTab === 'internships' ? 'Add Internship' : 'Add Job'}
+        title={editingItem ? (activeTab === 'internships' ? 'Edit Internship' : 'Edit Job') : (activeTab === 'internships' ? 'Add Internship' : 'Add Job')}
         titleAr={activeTab === 'internships' ? 'إضافة/تعديل تدريب' : 'إضافة/تعديل وظيفة'}
       >
         <form onSubmit={handleSubmit} className="space-y-6" dir="rtl">
@@ -264,54 +412,66 @@ export default function AdminOpportunities() {
           <div className="grid md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">{isArabic ? 'العنوان بالعربية' : 'Title (Arabic)'}</label>
-              <input type="text" name="titleAr" value={formData.titleAr || ''} onChange={handleChange} required className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
+              <input type="text" name="nameAr" value={formData.nameAr} onChange={handleChange} required className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
             </div>
             <div>
               <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">{isArabic ? 'العنوان بالإنجليزية' : 'Title (English)'}</label>
-              <input type="text" name="titleEn" value={formData.titleEn || ''} onChange={handleChange} required className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
+              <input type="text" name="nameEn" value={formData.nameEn} onChange={handleChange} className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
             </div>
           </div>
 
           <div>
             <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">{isArabic ? 'الوصف' : 'Description'}</label>
-            <textarea name="descriptionAr" value={formData.descriptionAr || ''} onChange={handleChange} rows={3} className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none" />
+            <textarea name="description" value={formData.description} onChange={handleChange} rows={3} required className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none" />
+          </div>
+
+          <div>
+            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">{isArabic ? 'المتطلبات' : 'Requirements'}</label>
+            <textarea
+              name="requirements"
+              value={formData.requirements}
+              onChange={handleChange}
+              rows={4}
+              className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
+              placeholder={isArabic ? 'كل متطلب في سطر منفصل' : 'Write each requirement on a new line'}
+            />
           </div>
 
           {/* Internship Fields */}
-          {activeTab === 'internships' && formData.kind === 'internship' && (
+          {activeTab === 'internships' && (
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">{isArabic ? 'المدة' : 'Duration'}</label>
-                <input type="text" name="duration" value={formData.duration || ''} onChange={handleChange} className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
+                <input type="text" name="duration" value={formData.duration} onChange={handleChange} required className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
               </div>
               <div>
                 <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">{isArabic ? 'المكافأة' : 'Stipend'}</label>
-                <input type="text" name="stipend" value={formData.stipend || ''} onChange={handleChange} className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
+                <input type="text" name="award" value={formData.award} onChange={handleChange} required className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
               </div>
             </div>
           )}
 
           {/* Job Fields */}
-          {activeTab === 'jobs' && formData.kind === 'job' && (
+          {activeTab === 'jobs' && (
             <div className="grid md:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">{isArabic ? 'الراتب' : 'Salary'}</label>
-                <input type="text" name="salary" value={formData.salary || ''} onChange={handleChange} className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
+                <input type="text" name="salary" value={formData.salary} onChange={handleChange} required className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
               </div>
               <div>
                 <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">{isArabic ? 'الموقع' : 'Location'}</label>
-                <input type="text" name="location" value={formData.location || ''} onChange={handleChange} className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
+                <input type="text" name="location" value={formData.location} onChange={handleChange} required className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
               </div>
               <div>
                 <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">{isArabic ? 'النوع' : 'Type'}</label>
-                <input type="text" name="type" value={formData.type || ''} onChange={handleChange} className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" />
+                <input type="text" name="jobType" value={formData.jobType} onChange={handleChange} required className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right" placeholder={isArabic ? 'مثال: دوام كامل' : 'Example: Full Time'} />
               </div>
             </div>
           )}
 
           <div className="flex gap-4">
-            <Button type="submit" variant="primary" className="flex-1 font-cairo">{isArabic ? 'حفظ' : 'Save'}</Button>
-            <Button type="button" variant="secondary" onClick={handleCloseModal} className="flex-1 font-cairo">{isArabic ? 'إلغاء' : 'Cancel'}</Button>
+            <Button type="submit" variant="primary" className="flex-1 font-cairo" isLoading={addOfferMutation.isPending || updateOfferMutation.isPending} disabled={isPending}>{isArabic ? 'حفظ' : 'Save'}</Button>
+            <Button type="button" variant="secondary" onClick={handleCloseModal} className="flex-1 font-cairo" disabled={isPending}>{isArabic ? 'إلغاء' : 'Cancel'}</Button>
           </div>
         </form>
       </Modal>

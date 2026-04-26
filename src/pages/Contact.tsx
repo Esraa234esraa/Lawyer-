@@ -3,10 +3,12 @@ import { useState } from 'react'
 import { Mail, Phone, MapPin } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
+import { useAddContact } from '@/hooks/contacts'
 import { toast } from 'sonner'
 
 export default function Contact() {
   const { isArabic } = useLanguage()
+  const addContactMutation = useAddContact()
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -14,7 +16,8 @@ export default function Contact() {
     subject: '',
     message: '',
   })
-  const [isLoading, setIsLoading] = useState(false)
+
+  const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -24,25 +27,55 @@ export default function Contact() {
     }))
   }
 
+  const validateForm = () => {
+    const fullName = formData.name.trim()
+    const phoneNumber = formData.phone.trim()
+    const email = formData.email.trim()
+
+    if (!fullName) {
+      toast.error(isArabic ? 'الاسم الكامل مطلوب' : 'Full name is required')
+      return false
+    }
+
+    if (!phoneNumber) {
+      toast.error(isArabic ? 'رقم الهاتف مطلوب' : 'Phone number is required')
+      return false
+    }
+
+    if (email && !emailPattern.test(email)) {
+      toast.error(isArabic ? 'صيغة البريد الإلكتروني غير صحيحة' : 'Invalid email format')
+      return false
+    }
+
+    return true
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    if (!validateForm() || addContactMutation.isPending) {
+      return
+    }
 
-    toast.success(
-      isArabic ? 'تم إرسال رسالتك بنجاح' : 'Your message has been sent successfully'
-    )
+    try {
+      await addContactMutation.mutateAsync({
+        fullName: formData.name.trim(),
+        phoneNumber: formData.phone.trim(),
+        email: formData.email.trim() || undefined,
+        subject: formData.subject.trim() || undefined,
+        mesage: formData.message.trim() || undefined,
+      })
 
-    setFormData({
-      name: '',
-      email: '',
-      phone: '',
-      subject: '',
-      message: '',
-    })
-    setIsLoading(false)
+      setFormData({
+        name: '',
+        email: '',
+        phone: '',
+        subject: '',
+        message: '',
+      })
+    } catch {
+      // Toast is handled by the mutation hook.
+    }
   }
 
   return (
@@ -137,7 +170,6 @@ export default function Contact() {
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
-                  required
                   className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
                   placeholder={isArabic ? 'اسمك الكامل' : 'Your full name'}
                 />
@@ -153,7 +185,6 @@ export default function Contact() {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    required
                     className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
                     placeholder="your@email.com"
                   />
@@ -182,7 +213,6 @@ export default function Contact() {
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
-                  required
                   className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
                   placeholder={isArabic ? 'موضوع الرسالة' : 'Message subject'}
                 />
@@ -196,7 +226,6 @@ export default function Contact() {
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
-                  required
                   rows={6}
                   className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
                   placeholder={isArabic ? 'رسالتك' : 'Your message'}
@@ -207,7 +236,7 @@ export default function Contact() {
                 type="submit"
                 variant="primary"
                 size="lg"
-                isLoading={isLoading}
+                isLoading={addContactMutation.isPending}
                 className="w-full font-cairo"
               >
                 {isArabic ? 'إرسال الرسالة' : 'Send Message'}

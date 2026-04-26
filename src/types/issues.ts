@@ -11,7 +11,7 @@ export interface IssueAttachment {
 
 export interface IssueClient {
   name: string
-  nationalId: string
+  nationalId: number
   nationalIdentityPath?: string
 }
 
@@ -35,7 +35,8 @@ export interface IssueType {
 
 export interface IssueClientInput {
   name: string
-  nationalId: string
+  nationalId: number
+  nationalIdentityPath?: string
   nationalIdentityFile?: File
 }
 

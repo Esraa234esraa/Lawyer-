@@ -1,40 +1,114 @@
 import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAdminStore, ConsultationBooking } from '@/store/adminStore'
+import {
+    useGetAllConsultations,
+    useDeleteConsultation,
+    useConfirmConsultation,
+} from '@/hooks/consultation'
 import DataTable, { Column } from '@/components/admin/DataTable'
 import Modal from '@/components/admin/Modal'
 import StatusBadge from '@/components/admin/StatusBadge'
 import { toast } from 'sonner'
+
+// Helper to get full URL for file paths
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://lawm.runasp.net';
+function getFullUrl(path: string) {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    let clean = path.replace(/^wwwroot\//, '/').replace(/^wwwroot\//, '/');
+    if (!clean.startsWith('/')) clean = '/' + clean;
+    return BASE_URL.replace(/\/$/, '') + clean;
+}
 import { Download, Eye } from 'lucide-react'
+function ConfirmConsultationButton({ consultation }: { consultation: any }) {
+    const { isArabic } = useLanguage();
+    const [nationalNumber, setNationalNumber] = useState('');
+    const [nationalIdentityPath, setNationalIdentityPath] = useState<File | null>(null);
+    const [consultationRequesAttachemnt, setConsultationRequesAttachemnt] = useState<File | null>(null);
+    const [details, setDetails] = useState('');
+    const confirmMutation = useConfirmConsultation(consultation.id);
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!nationalNumber || !nationalIdentityPath || !consultationRequesAttachemnt) {
+            toast.error(isArabic ? 'يرجى تعبئة جميع الحقول المطلوبة' : 'Please fill all required fields');
+            return;
+        }
+        confirmMutation.mutate({
+            nationalNumber,
+            nationalIdentityPath,
+            consultationRequesAttachemnt,
+            details,
+        });
+    };
+
+    if (consultation.isConfirmed) {
+        return <span className="px-4 py-2 rounded-lg bg-green-600 text-white font-cairo">{isArabic ? 'تم التأكيد' : 'Confirmed'}</span>;
+    }
+
+    return (
+        <form onSubmit={handleSubmit} className="flex flex-col gap-2 items-end">
+            <input
+                type="text"
+                placeholder={isArabic ? 'رقم الهوية الوطنية' : 'National Number'}
+                value={nationalNumber}
+                onChange={e => setNationalNumber(e.target.value)}
+                className="input-gold w-full"
+                required
+            />
+            <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={e => setNationalIdentityPath(e.target.files?.[0] || null)}
+                className="input-gold w-full"
+                required
+            />
+            <input
+                type="file"
+                accept=".pdf,.jpg,.jpeg,.png"
+                onChange={e => setConsultationRequesAttachemnt(e.target.files?.[0] || null)}
+                className="input-gold w-full"
+                required
+            />
+            <textarea
+                placeholder={isArabic ? 'تفاصيل إضافية (اختياري)' : 'Additional details (optional)'}
+                value={details}
+                onChange={e => setDetails(e.target.value)}
+                className="input-gold w-full"
+                rows={2}
+            />
+            <button
+                type="submit"
+                className="px-4 py-2 rounded-lg bg-green-600 text-white font-cairo"
+                disabled={confirmMutation.isPending}
+            >
+                {confirmMutation.isPending ? (isArabic ? 'جاري التأكيد...' : 'Confirming...') : (isArabic ? 'تأكيد الاستشارة' : 'Confirm Consultation')}
+            </button>
+        </form>
+    );
+}
 
 export default function AdminConsultations() {
     const { isArabic } = useLanguage()
-    const { consultations, deleteConsultation, updateConsultation } =
-        useAdminStore()
-    const [selectedConsultation, setSelectedConsultation] =
-        useState<ConsultationBooking | null>(null)
+    const { data: consultations = [], isLoading } = useGetAllConsultations()
+    const deleteMutation = useDeleteConsultation()
+    const [selectedConsultation, setSelectedConsultation] = useState<any | null>(null)
 
-    const handleDelete = (item: ConsultationBooking) => {
-        deleteConsultation(item.id)
-        toast.success(isArabic ? 'تم الحذف' : 'Deleted')
-    }
-    const handleConfirm = (item: ConsultationBooking) => {
-        updateConsultation(item.id, {
-            status: 'contacted'
+    const handleDelete = (item: any) => {
+        deleteMutation.mutate(item.id, {
+            onSuccess: () => toast.success(isArabic ? 'تم الحذف' : 'Deleted'),
+            onError: (err: any) => toast.error(err?.message || 'Delete failed'),
         })
-
-        toast.success(
-            isArabic ? 'تم تأكيد الاستشارة' : 'Consultation confirmed'
-        )
     }
+    // Confirmation will be handled in modal (see below)
 
-    const handleView = (item: ConsultationBooking) => {
+    const handleView = (item: any) => {
         setSelectedConsultation(item)
     }
-    const columns: Column<ConsultationBooking>[] = [
+    const columns: Column<any>[] = [
         {
-            key: 'name',
+            key: 'fullName',
             labelAr: 'الاسم',
             labelEn: 'Name',
         },
@@ -48,12 +122,7 @@ export default function AdminConsultations() {
             labelAr: 'الهاتف',
             labelEn: 'Phone',
         },
-        {
-            key: 'consultationName',
-            labelAr: 'اسم الاستشارة',
-            labelEn: 'Consultation',
-            render: (value) => value || '—',
-        },
+        // Add more columns as needed, mapping backend fields
         {
             key: 'paidAmountSar',
             labelAr: 'المبلغ المدفوع',
@@ -148,10 +217,10 @@ export default function AdminConsultations() {
                 data={consultations}
                 onDelete={handleDelete}
                 onView={handleView}
-                onSubmit={handleConfirm}
+                isLoading={isLoading}
                 deleteTitleAr="حذف حجز الاستشارة"
                 deleteTitleEn="Delete Consultation Booking"
-                getDeleteLabel={(item) => item.consultationName || item.name || item.email}
+                getDeleteLabel={(item) => item.fullName || item.email}
             />
 
             <Modal
@@ -165,7 +234,7 @@ export default function AdminConsultations() {
                         <div className="grid md:grid-cols-2 gap-4 text-sm">
                             <div>
                                 <p className="text-gray-400">{isArabic ? 'الاسم' : 'Name'}</p>
-                                <p className="text-white">{selectedConsultation.name}</p>
+                                <p className="text-white">{selectedConsultation.fullName}</p>
                             </div>
                             <div>
                                 <p className="text-gray-400">{isArabic ? 'الهاتف' : 'Phone'}</p>
@@ -177,136 +246,29 @@ export default function AdminConsultations() {
                             </div>
                             <div>
                                 <p className="text-gray-400">{isArabic ? 'رقم الهوية' : 'National ID'}</p>
-                                <p className="text-white">{selectedConsultation.nationalId || '—'}</p>
-                            </div>
-                            <div className="md:col-span-2">
-                                <p className="text-gray-400">{isArabic ? 'العنوان الوطني' : 'National Address'}</p>
-                                <p className="text-white">{selectedConsultation.nationalAddress || '—'}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-400">{isArabic ? 'نوع الدعوى' : 'Case Type'}</p>
-                                <p className="text-white">{selectedConsultation.service}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-400">{isArabic ? 'اسم الاستشارة' : 'Consultation'}</p>
-                                <p className="text-white">{selectedConsultation.consultationName || '—'}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-400">{isArabic ? 'المبلغ المدفوع' : 'Paid Amount'}</p>
-                                <p className="text-white">{selectedConsultation.paidAmountSar ? `${selectedConsultation.paidAmountSar} SAR` : '—'}</p>
-                            </div>
-                            <div>
-                                <p className="text-gray-400">{isArabic ? 'حالة الدفع' : 'Payment Status'}</p>
-                                <StatusBadge status={selectedConsultation.paymentStatus} />
+                                <p className="text-white">{selectedConsultation.nationalNumber || '—'}</p>
                             </div>
                         </div>
-
                         <div>
-                            <p className="text-gray-400 text-sm mb-2">{isArabic ? 'صورة الإيصال' : 'Receipt Image'}</p>
-                            {selectedConsultation.paymentReceiptDataUrl ? (
-                                selectedConsultation.paymentReceiptType?.startsWith('image/') ? (
-                                    <a
-                                        href={selectedConsultation.paymentReceiptDataUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="block rounded-lg overflow-hidden border border-gold/20"
-                                    >
-                                        <img
-                                            src={selectedConsultation.paymentReceiptDataUrl}
-                                            alt={selectedConsultation.paymentReceiptName || 'Receipt'}
-                                            className="w-full max-h-80 object-contain bg-black/20"
-                                        />
-                                    </a>
-                                ) : (
-                                    <a
-                                        href={selectedConsultation.paymentReceiptDataUrl}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="inline-flex items-center gap-2 text-gold underline"
-                                    >
-                                        <Eye size={16} />
-                                        {selectedConsultation.paymentReceiptName || 'Receipt'}
-                                    </a>
-                                )
-                            ) : (
-                                <p className="text-gray-300">{selectedConsultation.paymentReceiptName || '—'}</p>
-                            )}
+                            <p className="text-gray-400 text-sm mb-2">{isArabic ? 'إيصال الدفع' : 'Receipt'}</p>
+                            <a
+                                href={getFullUrl(selectedConsultation.paymentReceiptPath)}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="inline-flex items-center gap-2 text-gold underline"
+                            >
+                                <Eye size={16} />
+                                {isArabic ? 'عرض الإيصال' : 'View Receipt'}
+                            </a>
                         </div>
-
-                        <div>
-                            <p className="text-gray-400 text-sm mb-2">{isArabic ? 'مرفقات الدعوى' : 'Case Attachments'}</p>
-                            <div className="space-y-2">
-                                {selectedConsultation.caseAttachments?.length ? (
-                                    selectedConsultation.caseAttachments.map((fileName, index) => {
-                                        const filePayload = selectedConsultation.caseAttachmentFiles?.find(
-                                            (item) => item.name === fileName
-                                        )
-                                        const isAvailable = Boolean(filePayload?.dataUrl)
-
-                                        return (
-                                        <div
-                                            key={`${fileName}-${index}`}
-                                            className="flex items-center justify-between gap-3 p-3 rounded-lg border border-gold/20 bg-black/20"
-                                        >
-                                            <div className="flex items-center gap-2">
-                                                {isAvailable ? (
-                                                    <>
-                                                        <a
-                                                            href={filePayload?.dataUrl}
-                                                            target="_blank"
-                                                            rel="noreferrer"
-                                                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gold/15 text-gold text-xs"
-                                                        >
-                                                            <Eye size={14} />
-                                                            {isArabic ? 'فتح' : 'Open'}
-                                                        </a>
-                                                        <a
-                                                            href={filePayload?.dataUrl}
-                                                            download={fileName}
-                                                            className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-gold text-black text-xs"
-                                                        >
-                                                            <Download size={14} />
-                                                            {isArabic ? 'تحميل' : 'Download'}
-                                                        </a>
-                                                    </>
-                                                ) : (
-                                                    <span className="inline-flex items-center px-2 py-1 rounded-md bg-red-500/10 text-red-300 text-xs border border-red-500/20">
-                                                        {isArabic ? 'مرفق قديم غير متاح للفتح' : 'Legacy file not available for preview'}
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <p className="text-white text-sm truncate">{fileName}</p>
-                                        </div>
-                                        )
-                                    })
-                                ) : (
-                                    <span className="text-gray-400">—</span>
-                                )}
-                            </div>
-                        </div>
-
                         <div>
                             <p className="text-gray-400 text-sm mb-2">{isArabic ? 'نص الشكوى' : 'Complaint Text'}</p>
                             <p className="text-white whitespace-pre-wrap leading-7">
                                 {selectedConsultation.details}
                             </p>
                         </div>
-
                         <div className="flex justify-end gap-3 pt-2">
-                            {selectedConsultation.status === 'new' && selectedConsultation.paymentStatus === 'paid' && (
-                                <button
-                                    type="button"
-                                    onClick={() => {
-                                        handleConfirm(selectedConsultation)
-                                        setSelectedConsultation((current) =>
-                                            current ? { ...current, status: 'contacted' } : current
-                                        )
-                                    }}
-                                    className="px-4 py-2 rounded-lg bg-green-600 text-white font-cairo"
-                                >
-                                    {isArabic ? 'تأكيد الاستشارة' : 'Confirm Consultation'}
-                                </button>
-                            )}
+                            <ConfirmConsultationButton consultation={selectedConsultation} />
                             <button
                                 type="button"
                                 onClick={() => setSelectedConsultation(null)}

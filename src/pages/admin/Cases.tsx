@@ -8,7 +8,7 @@ import Modal from '@/components/admin/Modal'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useAddIssue, useDeleteIssue, useGetAllIssues, useGetIssueTypes, useUpdateIssue } from '@/hooks/issues'
 import { Issue, IssueClientInput, IssueSubmitInput } from '@/types/issues'
-import { buildIssueFormData, isValidGuid } from '@/services/issuesService'
+import { isValidGuid } from '@/services/issuesService'
 
 type IssueRow = {
   id: string
@@ -106,7 +106,8 @@ export default function AdminCases() {
         issue.clients?.length
           ? issue.clients.map((client) => ({
               name: client.name,
-              nationalId: client.nationalId,
+              nationalId: String(client.nationalId),
+              nationalIdentityFile: undefined,
               nationalIdentityPath: client.nationalIdentityPath,
             }))
           : [{ name: '', nationalId: '' }]
@@ -176,11 +177,28 @@ export default function AdminCases() {
     }
 
     const hasAtLeastOneValidClient = issueClients.some(
-      (client) => client.name.trim().length > 0 && client.nationalId.trim().length > 0
+      (client) =>
+        client.name.trim().length > 0 &&
+        client.nationalId.trim().length > 0 &&
+        Number.isFinite(Number(client.nationalId.trim())) &&
+        (Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0)
     )
 
     if (!hasAtLeastOneValidClient) {
-      nextErrors.issueClients = 'يجب إضافة عميل واحد على الأقل'
+      nextErrors.issueClients = 'يجب إضافة عميل واحد على الأقل مع مسار الهوية الوطنية'
+    }
+
+    const hasMissingIdentityPath = issueClients.some(
+      (client) =>
+        client.name.trim().length > 0 &&
+        client.nationalId.trim().length > 0 &&
+        Number.isFinite(Number(client.nationalId.trim())) &&
+        !client.nationalIdentityFile &&
+        (client.nationalIdentityPath || '').trim().length === 0
+    )
+
+    if (hasMissingIdentityPath) {
+      nextErrors.issueClients = 'ملف الهوية الوطنية مطلوب لكل عميل'
     }
 
     setErrors(nextErrors)
@@ -199,24 +217,29 @@ export default function AdminCases() {
       defendant: defendant.trim(),
       issueAttachmentFiles,
       issueClients: issueClients
-        .filter((client) => client.name.trim() && client.nationalId.trim())
+        .filter(
+          (client) =>
+            client.name.trim() &&
+            client.nationalId.trim() &&
+            Number.isFinite(Number(client.nationalId.trim())) &&
+            (Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0)
+        )
         .map<IssueClientInput>((client) => ({
           name: client.name.trim(),
-          nationalId: client.nationalId.trim(),
+          nationalId: Number(client.nationalId.trim()),
+          nationalIdentityPath: client.nationalIdentityPath?.trim(),
           nationalIdentityFile: client.nationalIdentityFile,
         })),
     }
 
-    const formData = buildIssueFormData(payload)
-
     if (editingIssue) {
-      await updateIssueMutation.mutateAsync(formData)
+      await updateIssueMutation.mutateAsync(payload)
       setIsModalOpen(false)
       setEditingIssue(null)
       return
     }
 
-    await addIssueMutation.mutateAsync(formData)
+    await addIssueMutation.mutateAsync(payload)
     setIsModalOpen(false)
     resetForm()
   }
@@ -420,7 +443,12 @@ export default function AdminCases() {
                   <div className="flex items-center gap-3">
                     <input
                       type="file"
-                      onChange={(e) => updateClientField(index, 'nationalIdentityFile', e.target.files?.[0])}
+                      required={!client.nationalIdentityPath}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0]
+                        updateClientField(index, 'nationalIdentityFile', file)
+                        updateClientField(index, 'nationalIdentityPath', file?.name)
+                      }}
                       className="block w-full text-sm text-gray-300 font-cairo"
                     />
                     {issueClients.length > 1 && (

@@ -1,22 +1,44 @@
 import { motion } from 'framer-motion'
+import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { ArrowRight, Clock, Gift } from 'lucide-react'
+import { ArrowRight, Clock, Gift, MapPin } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAdminStore } from '@/store/adminStore'
+import { useGetAllOffers, useGetOfferById } from '@/hooks/offers'
 import InternshipApplicationForm from '@/components/client/InternshipApplicationForm'
 import { useState } from 'react'
+import { Offer } from '@/types/offer'
+
+const parseRequirements = (requirements: string): string[] =>
+  requirements
+    .split(/\r?\n|,/) 
+    .map((item) => item.trim())
+    .filter(Boolean)
 
 export default function Internships() {
   const { isArabic } = useLanguage()
   const { id } = useParams()
-  const { internships } = useAdminStore()
   const [showForm, setShowForm] = useState(false)
+  const { data, isLoading, isFetching } = useGetAllOffers(2)
+  const {
+    data: internshipByIdResponse,
+    isLoading: isInternshipLoading,
+    isFetching: isInternshipFetching,
+  } = useGetOfferById(id || '', 2, Boolean(id))
 
-  const internship = id ? internships.find((i) => i.id === parseInt(id)) : null
-  const activeInternships = internships.filter((i) => i.status === 'active')
+  const offers = data?.data || []
+  const activeInternships = useMemo(
+    () => offers.filter((item) => item.hiringAndTraning === 2 && item.isActive !== false),
+    [offers]
+  )
+
+  const internship = id
+    ? internshipByIdResponse?.data || activeInternships.find((item) => item.id === id) || null
+    : null
 
   if (id && internship) {
+    const internshipRequirements = parseRequirements(internship.requirements)
+
     return (
       <div dir="rtl" className="pt-20 md:pt-24 pb-16">
         {/* Breadcrumb */}
@@ -40,7 +62,7 @@ export default function Internships() {
                   transition={{ duration: 0.6 }}
                 >
                   <h1 className="text-heading-2 md:text-heading-1 font-cairo font-bold text-gradient mb-4">
-                    {isArabic ? internship.titleAr : internship.titleEn}
+                    {isArabic ? internship.nameAr : internship.nameEn || internship.nameAr}
                   </h1>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
@@ -64,15 +86,22 @@ export default function Internships() {
                         </p>
                       </div>
                       <p className="text-gold font-cairo font-semibold text-sm md:text-base">
-                        {internship.stipend}
+                        {internship.award}
                       </p>
                     </div>
 
-                    <div className="p-4 bg-green-500/10 border border-green-500/30 rounded-lg text-right">
-                      <p className="text-green-400 font-cairo font-semibold text-sm md:text-base">
-                        ✓ {isArabic ? 'متاح الآن' : 'Available Now'}
+                    <div className="p-4 bg-primary-black border border-gold/20 rounded-lg text-right">
+                      <div className="flex items-center justify-end gap-2 mb-2">
+                        <MapPin size={20} className="text-gold" />
+                        <p className="text-gray-400 font-cairo text-xs md:text-sm">
+                          {isArabic ? 'الموقع' : 'Location'}
+                        </p>
+                      </div>
+                      <p className="text-gold font-cairo font-semibold text-sm md:text-base">
+                        {internship.location}
                       </p>
                     </div>
+
                   </div>
 
                   <div className="mb-8">
@@ -80,7 +109,7 @@ export default function Internships() {
                       {isArabic ? 'تفاصيل البرنامج' : 'Program Details'}
                     </h2>
                     <p className="text-gray-300 font-cairo text-sm md:text-lg mb-4">
-                      {isArabic ? internship.detailsAr : internship.detailsEn}
+                      {internship.description}
                     </p>
                   </div>
 
@@ -89,7 +118,7 @@ export default function Internships() {
                       {isArabic ? 'المتطلبات' : 'Requirements'}
                     </h2>
                     <ul className="space-y-2">
-                      {internship.requirements.map((req, idx) => (
+                      {internshipRequirements.map((req, idx) => (
                         <li key={idx} className="text-gray-300 font-cairo text-sm md:text-base flex items-center gap-2 justify-end">
                           <span>{req}</span>
                           <span className="text-gold">✓</span>
@@ -112,7 +141,7 @@ export default function Internships() {
               </>
             ) : (
               <InternshipApplicationForm
-                internship={internship}
+                hiringAndTraningType={2}
                 onClose={() => setShowForm(false)}
               />
             )}
@@ -147,6 +176,12 @@ export default function Internships() {
       {/* Internships List */}
       <section className="section-padding bg-charcoal">
         <div className="container-max px-4 md:px-0">
+          {(isLoading || isFetching || isInternshipLoading || isInternshipFetching) && (
+            <div className="mb-4 text-gray-300 font-cairo text-sm text-right">
+              {isArabic ? 'جاري تحميل برامج التدريب...' : 'Loading internships...'}
+            </div>
+          )}
+
           <div className="space-y-4 md:space-y-6">
             {activeInternships.length === 0 ? (
               <div className="text-center py-12 bg-primary-black border border-gold/20 rounded-lg">
@@ -166,10 +201,10 @@ export default function Internships() {
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="flex-1 text-right w-full">
                       <h3 className="text-heading-3 md:text-heading-3 font-cairo font-bold text-gold mb-2">
-                        {isArabic ? internship.titleAr : internship.titleEn}
+                        {isArabic ? internship.nameAr : internship.nameEn || internship.nameAr}
                       </h3>
                       <p className="text-gray-300 font-cairo text-sm md:text-base mb-4">
-                        {isArabic ? internship.descriptionAr : internship.descriptionEn}
+                        {internship.description}
                       </p>
 
                       <div className="flex flex-wrap items-center justify-end gap-3 md:gap-6 mb-4">
@@ -186,7 +221,15 @@ export default function Internships() {
                             {isArabic ? 'المكافأة' : 'Stipend'}
                           </p>
                           <p className="text-gold font-cairo font-semibold text-sm md:text-base">
-                            {internship.stipend}
+                            {internship.award}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-gray-400 text-xs md:text-sm font-cairo mb-1">
+                            {isArabic ? 'الموقع' : 'Location'}
+                          </p>
+                          <p className="text-gold font-cairo font-semibold text-sm md:text-base">
+                            {internship.location}
                           </p>
                         </div>
                       </div>

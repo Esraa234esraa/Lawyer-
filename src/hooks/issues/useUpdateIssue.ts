@@ -1,13 +1,14 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { updateIssue } from '@/services/issuesService'
+import { IssueSubmitInput } from '@/types/issues'
 import { ISSUES_QUERY_KEYS } from './useGetAllIssues'
 
 export const useUpdateIssue = (id: string) => {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (formData: FormData) => updateIssue(id, formData),
+    mutationFn: (payload: IssueSubmitInput) => updateIssue(id, payload),
     onSuccess: (response) => {
       toast.success(response.message || 'تم تحديث القضية بنجاح')
       queryClient.invalidateQueries({ queryKey: ISSUES_QUERY_KEYS.all })

@@ -1,19 +1,42 @@
 import { motion } from 'framer-motion'
+import { useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowRight, MapPin, DollarSign, Briefcase } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAdminStore } from '@/store/adminStore'
+import { useGetAllOffers, useGetOfferById } from '@/hooks/offers'
+import InternshipApplicationForm from '@/components/client/InternshipApplicationForm'
+
+const parseRequirements = (requirements: string): string[] =>
+  requirements
+    .split(/\r?\n|,/) 
+    .map((item) => item.trim())
+    .filter(Boolean)
 
 export default function Jobs() {
   const { isArabic } = useLanguage()
   const { id } = useParams()
-  const { jobs } = useAdminStore()
+  const [showForm, setShowForm] = useState(false)
+  const { data, isLoading, isFetching } = useGetAllOffers(1)
+  const {
+    data: jobByIdResponse,
+    isLoading: isJobLoading,
+    isFetching: isJobFetching,
+  } = useGetOfferById(id || '', 1, Boolean(id))
 
-  const job = id ? jobs.find((j) => j.id === parseInt(id)) : null
-  const activeJobs = jobs.filter((j) => j.status === 'active')
+  const offers = data?.data || []
+  const activeJobs = useMemo(
+    () => offers.filter((item) => item.hiringAndTraning === 1 && item.isActive !== false),
+    [offers]
+  )
+
+  const job = id
+    ? jobByIdResponse?.data || activeJobs.find((item) => item.id === id) || null
+    : null
 
   if (id && job) {
+    const requirements = parseRequirements(job.requirements)
+
     return (
       <div dir="rtl" className="pt-20 md:pt-24 pb-16">
         {/* Breadcrumb */}
@@ -29,13 +52,14 @@ export default function Jobs() {
         {/* Details */}
         <section className="section-padding bg-charcoal">
           <div className="container-max px-4 md:px-0">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-            >
+            {!showForm ? (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+              >
               <h1 className="text-heading-2 md:text-heading-1 font-cairo font-bold text-gradient mb-4">
-                {isArabic ? job.titleAr : job.titleEn}
+                {isArabic ? job.nameAr : job.nameEn || job.nameAr}
               </h1>
 
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
@@ -74,6 +98,7 @@ export default function Jobs() {
                     {job.type}
                   </p>
                 </div>
+
               </div>
 
               <div className="mb-8">
@@ -81,7 +106,7 @@ export default function Jobs() {
                   {isArabic ? 'وصف الوظيفة' : 'Job Description'}
                 </h2>
                 <p className="text-gray-300 font-cairo text-sm md:text-lg mb-4">
-                  {isArabic ? job.detailsAr : job.detailsEn}
+                  {job.description}
                 </p>
               </div>
 
@@ -90,7 +115,7 @@ export default function Jobs() {
                   {isArabic ? 'المتطلبات' : 'Requirements'}
                 </h2>
                 <ul className="space-y-2">
-                  {job.requirements.map((req, idx) => (
+                  {requirements.map((req, idx) => (
                     <li key={idx} className="text-gray-300 font-cairo text-sm md:text-base flex items-center gap-2 justify-end">
                       <span>{req}</span>
                       <span className="text-gold">✓</span>
@@ -101,6 +126,7 @@ export default function Jobs() {
 
               <div className="w-full md:w-auto">
                 <Button
+                  onClick={() => setShowForm(true)}
                   size="lg"
                   variant="primary"
                   className="w-full md:w-auto font-cairo text-sm md:text-base"
@@ -108,7 +134,13 @@ export default function Jobs() {
                   {isArabic ? 'تقديم الطلب' : 'Apply Now'}
                 </Button>
               </div>
-            </motion.div>
+              </motion.div>
+            ) : (
+              <InternshipApplicationForm
+                hiringAndTraningType={1}
+                onClose={() => setShowForm(false)}
+              />
+            )}
           </div>
         </section>
       </div>
@@ -140,6 +172,12 @@ export default function Jobs() {
       {/* Jobs List */}
       <section className="section-padding bg-charcoal">
         <div className="container-max px-4 md:px-0">
+          {(isLoading || isFetching || isJobLoading || isJobFetching) && (
+            <div className="mb-4 text-gray-300 font-cairo text-sm text-right">
+              {isArabic ? 'جاري تحميل الوظائف...' : 'Loading jobs...'}
+            </div>
+          )}
+
           <div className="space-y-4 md:space-y-6">
             {activeJobs.length === 0 ? (
               <div className="text-center py-12 bg-primary-black border border-gold/20 rounded-lg">
@@ -159,10 +197,10 @@ export default function Jobs() {
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="flex-1 text-right w-full">
                       <h3 className="text-heading-3 md:text-heading-3 font-cairo font-bold text-gold mb-2">
-                        {isArabic ? job.titleAr : job.titleEn}
+                        {isArabic ? job.nameAr : job.nameEn || job.nameAr}
                       </h3>
                       <p className="text-gray-300 font-cairo text-sm md:text-base mb-4">
-                        {isArabic ? job.descriptionAr : job.descriptionEn}
+                        {job.description}
                       </p>
 
                       <div className="flex flex-wrap items-center justify-end gap-3 md:gap-6 mb-4 text-xs md:text-sm">

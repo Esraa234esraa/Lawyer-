@@ -1,20 +1,29 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAdminStore } from '@/store/adminStore'
+import { useGetWhoAreWe, useUpdateWhoAreWe } from '@/hooks/whoAreWe'
 import { toast } from 'sonner'
 
 export default function AdminAbout() {
   const { isArabic } = useLanguage()
-  const { aboutData, updateAbout } = useAdminStore()
+  const { data, isLoading, isFetching } = useGetWhoAreWe()
+  const updateWhoAreWeMutation = useUpdateWhoAreWe()
+
   const [formData, setFormData] = useState({
-    vision: aboutData.vision,
-    visionEn: aboutData.visionEn,
-    mission: aboutData.mission,
-    missionEn: aboutData.missionEn,
+    visionAr: '',
+    messageAr: '',
   })
-  const [isSaving, setIsSaving] = useState(false)
+
+  useEffect(() => {
+    const whoAreWe = data?.data
+    if (!whoAreWe) return
+
+    setFormData({
+      visionAr: whoAreWe.visionAr || '',
+      messageAr: whoAreWe.messageAr || '',
+    })
+  }, [data])
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -26,14 +35,30 @@ export default function AdminAbout() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsSaving(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
+    if (!formData.visionAr.trim()) {
+      toast.error(isArabic ? 'حقل الرؤية بالعربية مطلوب' : 'VisionAr is required')
+      return
+    }
 
-    updateAbout(formData)
-    toast.success(isArabic ? 'تم حفظ التعديلات' : 'Changes saved')
-    setIsSaving(false)
+    if (!formData.messageAr.trim()) {
+      toast.error(isArabic ? 'حقل الرسالة بالعربية مطلوب' : 'MessageAr is required')
+      return
+    }
+
+    const whoAreWe = data?.data
+    if (!whoAreWe?.id) {
+      toast.error(isArabic ? 'تعذر تحديد السجل للتحديث' : 'Could not resolve record id')
+      return
+    }
+
+    await updateWhoAreWeMutation.mutateAsync({
+      id: whoAreWe.id,
+      payload: {
+        visionAr: formData.visionAr.trim(),
+        messageAr: formData.messageAr.trim(),
+      },
+    })
   }
 
   return (
@@ -53,7 +78,18 @@ export default function AdminAbout() {
             ? 'قم بتعديل الرؤية والرسالة'
             : 'Edit vision and mission'}
         </p>
+        {isFetching && (
+          <p className="text-gray-500 font-cairo text-xs mt-1">
+            {isArabic ? 'جاري تحديث البيانات...' : 'Refreshing data...'}
+          </p>
+        )}
       </motion.div>
+
+      {isLoading && (
+        <div className="mb-4 text-gray-300 font-cairo text-sm">
+          {isArabic ? 'جاري تحميل بيانات من نحن...' : 'Loading who are we data...'}
+        </div>
+      )}
 
       {/* Form */}
       <motion.form
@@ -69,31 +105,17 @@ export default function AdminAbout() {
             {isArabic ? 'الرؤية' : 'Vision'}
           </h2>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-cairo font-semibold text-gold mb-3 text-right">
-                {isArabic ? 'الرؤية (عربي)' : 'Vision (Arabic)'}
-              </label>
-              <textarea
-                name="vision"
-                value={formData.vision}
-                onChange={handleChange}
-                rows={5}
-                className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-cairo font-semibold text-gold mb-3 text-right">
-                {isArabic ? 'الرؤية (إنجليزي)' : 'Vision (English)'}
-              </label>
-              <textarea
-                name="visionEn"
-                value={formData.visionEn}
-                onChange={handleChange}
-                rows={5}
-                className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-cairo font-semibold text-gold mb-3 text-right">
+              {isArabic ? 'الرؤية (عربي)' : 'Vision (Arabic)'}
+            </label>
+            <textarea
+              name="visionAr"
+              value={formData.visionAr}
+              onChange={handleChange}
+              rows={5}
+              className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
+            />
           </div>
         </div>
 
@@ -103,31 +125,17 @@ export default function AdminAbout() {
             {isArabic ? 'الرسالة' : 'Mission'}
           </h2>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-cairo font-semibold text-gold mb-3 text-right">
-                {isArabic ? 'الرسالة (عربي)' : 'Mission (Arabic)'}
-              </label>
-              <textarea
-                name="mission"
-                value={formData.mission}
-                onChange={handleChange}
-                rows={5}
-                className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-cairo font-semibold text-gold mb-3 text-right">
-                {isArabic ? 'الرسالة (إنجليزي)' : 'Mission (English)'}
-              </label>
-              <textarea
-                name="missionEn"
-                value={formData.missionEn}
-                onChange={handleChange}
-                rows={5}
-                className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
-              />
-            </div>
+          <div>
+            <label className="block text-sm font-cairo font-semibold text-gold mb-3 text-right">
+              {isArabic ? 'الرسالة (عربي)' : 'Mission (Arabic)'}
+            </label>
+            <textarea
+              name="messageAr"
+              value={formData.messageAr}
+              onChange={handleChange}
+              rows={5}
+              className="w-full px-4 py-3 bg-primary-black border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
+            />
           </div>
         </div>
 
@@ -137,7 +145,8 @@ export default function AdminAbout() {
             type="submit"
             variant="primary"
             size="lg"
-            isLoading={isSaving}
+            isLoading={updateWhoAreWeMutation.isPending}
+            disabled={updateWhoAreWeMutation.isPending || isLoading}
             className="font-cairo"
           >
             {isArabic ? 'حفظ التعديلات' : 'Save Changes'}

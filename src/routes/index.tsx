@@ -28,10 +28,12 @@ const AdminCaseDetails = lazy(() => import('@/pages/admin/CaseDetails'))
 const AdminNews = lazy(() => import('@/pages/admin/News'))
 const AdminClients = lazy(() => import('@/pages/admin/Clients'))
 const AdminInternships = lazy(() => import('@/pages/admin/Internships'))
+const AdminApplicationDetails = lazy(() => import('@/pages/admin/ApplicationDetails'))
 const AdminAbout = lazy(() => import('@/pages/admin/About'))
 const AdminClientsFiles = lazy(() => import('@/pages/admin/ClientsFiles'))
 const AdminChat = lazy(() => import('@/pages/admin/AdminChat'))
 const AdminOpportunities = lazy(() => import('@/pages/admin/Opportunities'))
+const AdminMessages = lazy(() => import('@/pages/admin/Messages'))
 
 // Client Pages
 const ClientDashboard = lazy(() => import('@/pages/client/Dashboard'))
@@ -92,9 +94,11 @@ export default function AppRoutes() {
         <Route path="/admin/news" element={<AdminNews />} />
         <Route path="/admin/clients" element={<AdminClients />} />
         <Route path="/admin/internships" element={<AdminInternships />} />
+        <Route path="/admin/internships/:id" element={<AdminApplicationDetails />} />
         <Route path="/admin/about" element={<AdminAbout />} />
         <Route path="/admin/clients-files" element={<AdminClientsFiles />} />
         <Route path="/admin/chat" element={<AdminChat />} />
+        <Route path="/admin/messages" element={<AdminMessages />} />
         <Route path="/admin/consultation" element={<AdminConsultations />} />
         <Route path="/admin/opportunities" element={<AdminOpportunities />} />
         <Route path="/admin/cases-analysis" element={<CasesAnalysisPage />} />
