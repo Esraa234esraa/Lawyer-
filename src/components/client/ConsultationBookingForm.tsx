@@ -26,7 +26,13 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
   ]
 
   // TODO: Replace with backend fetch if needed
-  const services = [] // Placeholder, should be fetched from backend if not already
+  type Service = {
+    id: number;
+    titleAr: string;
+    titleEn?: string;
+    priceAr: string;
+  };
+  const services: Service[] = [] // Placeholder, should be fetched from backend if not already
   const consultationOptions = services.map((service) => ({
     key: String(service.id),
     nameAr: service.titleAr,
@@ -47,9 +53,9 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
 
   const [currentStep, setCurrentStep] = useState(1)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
-  const [receiptPreview, setReceiptPreview] = useState<string>('')
+  // Removed unused: receiptPreview, setReceiptPreview
   const [caseFiles, setCaseFiles] = useState<File[]>([])
-  const [paymentCompleted, setPaymentCompleted] = useState(false)
+  // Removed unused: paymentCompleted
   const [submitted, setSubmitted] = useState(false)
 
   const [isLoading, setIsLoading] = useState(false)
@@ -82,19 +88,7 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
     }))
   }, [consultationOptions, isArabic, location.search, location.state])
 
-  const fileToDataUrl = (file: File) =>
-    new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => {
-        if (typeof reader.result === 'string') {
-          resolve(reader.result)
-          return
-        }
-        reject(new Error('Invalid file data'))
-      }
-      reader.onerror = () => reject(reader.error || new Error('Failed to read file'))
-      reader.readAsDataURL(file)
-    })
+  // Removed unused: fileToDataUrl
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -107,7 +101,7 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
       setReceiptFile(file)
       const reader = new FileReader()
       reader.onload = () => {
-        setReceiptPreview(typeof reader.result === 'string' ? reader.result : '')
+        // Removed setReceiptPreview usage
       }
       reader.readAsDataURL(file)
       toast.success(isArabic ? `تم تحميل: ${file.name}` : `Uploaded: ${file.name}`)
@@ -177,16 +171,7 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
     setCurrentStep((prev) => Math.max(prev - 1, 1))
   }
 
-  const handleConfirmPayment = () => {
-    if (!formData.consultationKey) {
-      toast.error(isArabic ? 'يرجى اختيار نوع الاستشارة أولاً' : 'Please select the consultation type first')
-      return
-    }
-
-    setPaymentCompleted(true)
-    toast.success(isArabic ? 'تم تسجيل الدفع، انتقل لرفع الإيصال' : 'Payment recorded, continue to receipt upload')
-    setCurrentStep(2)
-  }
+  // Removed unused: handleConfirmPayment
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

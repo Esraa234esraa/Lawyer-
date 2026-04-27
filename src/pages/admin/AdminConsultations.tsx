@@ -20,7 +20,7 @@ function getFullUrl(path: string) {
     if (!clean.startsWith('/')) clean = '/' + clean;
     return BASE_URL.replace(/\/$/, '') + clean;
 }
-import { Download, Eye } from 'lucide-react'
+import { Eye } from 'lucide-react'
 function ConfirmConsultationButton({ consultation }: { consultation: any }) {
     const { isArabic } = useLanguage();
     const [nationalNumber, setNationalNumber] = useState('');
@@ -217,7 +217,6 @@ export default function AdminConsultations() {
                 data={consultations}
                 onDelete={handleDelete}
                 onView={handleView}
-                isLoading={isLoading}
                 deleteTitleAr="حذف حجز الاستشارة"
                 deleteTitleEn="Delete Consultation Booking"
                 getDeleteLabel={(item) => item.fullName || item.email}

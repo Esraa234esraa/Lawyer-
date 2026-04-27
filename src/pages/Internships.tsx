@@ -7,7 +7,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useGetAllOffers, useGetOfferById } from '@/hooks/offers'
 import InternshipApplicationForm from '@/components/client/InternshipApplicationForm'
 import { useState } from 'react'
-import { Offer } from '@/types/offer'
+// import { Offer } from '@/types/offer'
 
 const parseRequirements = (requirements: string): string[] =>
   requirements

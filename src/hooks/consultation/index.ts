@@ -1,7 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { consultationService } from '../../services/consultationService';
 import {
-  ApplyConsultationInput,
   ConfirmConsultationInput,
 } from '../../types/consultation.types';
 import { toast } from 'sonner';
