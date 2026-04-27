@@ -91,7 +91,7 @@ function ConfirmConsultationButton({ consultation }: { consultation: any }) {
 
 export default function AdminConsultations() {
     const { isArabic } = useLanguage()
-    const { data: consultations = [], isLoading } = useGetAllConsultations()
+    const { data: consultations = [] } = useGetAllConsultations()
     const deleteMutation = useDeleteConsultation()
     const [selectedConsultation, setSelectedConsultation] = useState<any | null>(null)
 
