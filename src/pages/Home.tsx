@@ -6,15 +6,21 @@ import ServiceCard from '@/components/ui/ServiceCard'
 import NewsCard from '@/components/ui/NewsCard'
 // import TestimonialCard from '@/components/ui/TestimonialCard'
 import { useLanguage } from '@/hooks/useLanguage'
-import { newsData, statsData } from '@/data/mockData'
+import {  statsData } from '@/data/mockData'
 import { useAdminStore } from '@/store/adminStore'
 import { Link } from 'react-router-dom'
-
+import { useGetServices } from '@/hooks/services'
+import { useGetVisibleNews } from '@/hooks/news'
 export default function Home() {
   const { isArabic } = useLanguage()
-  const { services } = useAdminStore()
   const [_selectedService, setSelectedService] = useState<number | null>(null)
+  // ✅ Services API
+  const { data: servicesData, isLoading: servicesLoading } = useGetServices()
+  const services = servicesData?.data || []
 
+  // ✅ News API
+  const { data: newsResponse, isLoading: newsLoading } = useGetVisibleNews()
+  const newsList = newsResponse?.data || []
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -24,6 +30,13 @@ export default function Home() {
         delayChildren: 0.3,
       },
     },
+  }
+   // ✅ fix image path
+  const resolveImagePath = (filePath: string) => {
+    if (!filePath) return ''
+    if (filePath.startsWith('http')) return filePath
+    const normalized = filePath.replace(/^\/?wwwroot\/?/i, '')
+    return `https://lawm.runasp.net/${normalized}`
   }
 
   const itemVariants = {
@@ -86,8 +99,8 @@ export default function Home() {
   return (
     <div dir="rtl">
       {/* Hero Section */}
-      <section className="relative min-h-screen  flex items-center justify-center overflow-hidden pt-20">
-        {/* Background Image */}
+      <section className="relative min-h-[100dvh] flex items-center justify-center overflow-hidden pt-24 pb-10 px-4 sm:px-6">
+
         <div
           className="absolute inset-0 z-0 opacity-20"
           style={{
@@ -97,104 +110,58 @@ export default function Home() {
           }}
         />
 
-        {/* Gradient Overlay */}
         <div className="absolute inset-0 bg-gradient-to-b from-charcoal via-primary-black/80 to-primary-black z-10" />
 
-        {/* Content */}
         <div className="container-max relative z-20">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1 }}
-            className="text-center max-w-4xl mx-auto"
-          >
-            {/* Animated H1 - حرف بحرف */}
-            <motion.h1
-              className="text-display font-cairo font-bold mb-6 text-gradient pb-8"
-              variants={headingContainer}
-              initial="hidden"
-              animate="visible"
-            >
-              {headingLetters.map((char, idx) => (
-                <motion.span key={idx} variants={headingLetter}>
-                  {char === ' ' ? '\u00A0' : char}
-                </motion.span>
-              ))}
-            </motion.h1>
+          <div className="text-center max-w-4xl mx-auto">
 
-            {/* Animated name - حرف بحرف */}
-            <motion.div
-              className="text-2xl md:text-3xl font-cairo font-bold text-gold mb-4"
-              variants={nameContainer}
-              initial="hidden"
-              animate="visible"
-            >
-              {nameLetters.map((char, idx) => (
-                <motion.span key={idx} variants={nameLetter}>
-                  {char === ' ' ? '\u00A0' : char}
-                </motion.span>
-              ))}
-            </motion.div>
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-cairo font-bold mb-6 md:pb-8 text-gradient leading-tight">
+              {isArabic ? 'أهلاً بك في مكتبي القانوني' : 'Welcome to my law office'}
+            </h1>
 
-            <motion.p
-              className="text-lg text-gray-300 mb-8 font-cairo max-w-2xl mx-auto"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 1, delay: 0.4 }}
-            >
+            <p className="text-sm sm:text-base md:text-lg text-gray-300 mb-6 font-cairo max-w-2xl mx-auto">
               {isArabic
-                ? 'يُعد مكتب المحامية مريم بنت محمد جهة قانونية متخصصة تقدم استشارات وحلولًا عملية تحمي حقوق الأفراد والشركات في القضايا، العقود، والتسجيل العقاري.'
-                : 'Maryam bint Mohammed Law Office is a specialized legal practice providing practical, rights-focused solutions for individuals and businesses in disputes, contracts, and real-estate registration.'}
-            </motion.p>
+                ? 'يُعد مكتب المحامية مريم بنت محمد جهة قانونية متخصصة تقدم حلولًا عملية لحماية حقوقك.'
+                : 'A specialized law office providing practical legal solutions to protect your rights.'}
+            </p>
 
-            <motion.div
-              className="flex flex-col sm:flex-row justify-center gap-4 mb-16"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.6 }}
-            >
+            <div className="flex flex-col sm:flex-row justify-center gap-4 mb-12">
               <Link to="/contact">
                 <Button size="lg" variant="primary" className="font-cairo flex-row-reverse">
-                  {isArabic ? 'احجز استشارة مجانية' : 'Schedule Free Consultation'}
+                  {isArabic ? 'احجز استشارة' : 'Book Consultation'}
                   <ArrowLeft className="me-2" size={20} />
                 </Button>
               </Link>
+
               <Link to="/services">
                 <Button size="lg" variant="secondary" className="font-cairo">
-                  {isArabic ? 'اكتشف الخدمات' : 'Discover Services'}
+                  {isArabic ? 'الخدمات' : 'Services'}
                 </Button>
               </Link>
-            </motion.div>
+            </div>
 
             {/* Stats */}
-            <motion.div
-              className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-8 border-t border-gold/20"
-              variants={containerVariants}
-              initial="hidden"
-              animate="visible"
-            >
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 pt-6 border-t border-gold/20">
               {statsData.map((stat, idx) => (
-                <motion.div key={idx} variants={itemVariants} className="text-center">
-                  <p className="text-3xl font-bold text-gold font-cairo mb-2">{isArabic ? stat.numberAr : stat.numberEn}</p>
-                  <p className="text-sm text-gray-400 font-cairo">{isArabic ? stat.labelAr : stat.labelEn}</p>
-                </motion.div>
+                <div key={idx} className="text-center">
+                  <p className="text-2xl sm:text-3xl font-bold text-gold mb-2">
+                    {isArabic ? stat.numberAr : stat.numberEn}
+                  </p>
+                  <p className="text-xs sm:text-sm text-gray-400">
+                    {isArabic ? stat.labelAr : stat.labelEn}
+                  </p>
+                </div>
               ))}
-            </motion.div>
-          </motion.div>
+            </div>
+
+          </div>
         </div>
 
-        {/* Scroll Indicator */}
-        <motion.div
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 z-20"
-        >
-          <ChevronDown size={32} className="text-gold" />
-        </motion.div>
+        <ChevronDown className="absolute bottom-6 text-gold animate-bounce" size={28} />
       </section>
 
       {/* Services Section */}
-      <section className="section-padding bg-primary-black">
+      {/* <section className="section-padding bg-primary-black">
         <div className="container-max">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -249,8 +216,41 @@ export default function Home() {
             </Link>
           </motion.div>
         </div>
-      </section>
+      </section> */}
+ <section className="section-padding bg-primary-black">
+        <div className="container-max">
 
+          <h2 className="text-heading-1 text-center text-gradient mb-12">
+            {isArabic ? 'خدماتنا المتخصصة' : 'Our Services'}
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {servicesLoading ? (
+              <p className="text-center text-gray-400 col-span-3">
+                جاري تحميل الخدمات...
+              </p>
+            ) : (
+              services.slice(0, 6).map((service) => (
+                <motion.div key={service.id}>
+                  <Link to={`/services/${service.id}`}>
+                    <ServiceCard
+                      titleAr={service.title}
+                      titleEn={service.title}
+                      descriptionAr={service.description}
+                      descriptionEn={service.description}
+                      priceAr={service.price ? `${service.price} ر.س` : ''}
+                      priceEn={service.price ? `${service.price} SAR` : ''}
+                      icon={''}
+                      features={(service.childernTheServices || []).map(c => c.term)}
+                    />
+                  </Link>
+                </motion.div>
+              ))
+            )}
+          </div>
+
+        </div>
+      </section>
       {/* About Section */}
       <section className="section-padding bg-charcoal">
         <div className="container-max">
@@ -380,7 +380,7 @@ export default function Home() {
       </section>
 
       {/* News Section */}
-      <section className="section-padding bg-primary-black">
+      {/* <section className="section-padding bg-primary-black">
         <div className="container-max">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -436,8 +436,43 @@ export default function Home() {
             </Link>
           </motion.div>
         </div>
-      </section>
+      </section> */}
+ <section className="section-padding bg-charcoal">
+        <div className="container-max">
 
+          <h2 className="text-heading-1 text-center text-gradient mb-12">
+            {isArabic ? 'آخر الأخبار' : 'Latest News'}
+          </h2>
+
+          <div className="grid md:grid-cols-3 gap-6">
+            {newsLoading ? (
+              <p className="text-center text-gray-400 col-span-3">
+                جاري تحميل الأخبار...
+              </p>
+            ) : (
+              newsList.slice(0, 3).map((news) => (
+                <motion.div key={news.id}>
+                  <Link to={`/news/${news.id}`}>
+                    <NewsCard
+                      titleAr={news.name}
+                      titleEn={news.name}
+                      descriptionAr={news.description}
+                      descriptionEn={news.description}
+                      date={String(news.actionDate)}
+                      categoryAr={news.isActive ? 'نشط' : 'غير نشط'}
+                      categoryEn={news.isActive ? 'Active' : 'Inactive'}
+                      image={resolveImagePath(news.filePath)}
+                      authorAr="أخبار المكتب"
+                      authorEn="Firm News"
+                    />
+                  </Link>
+                </motion.div>
+              ))
+            )}
+          </div>
+
+        </div>
+      </section>
       {/* Testimonials Section */}
       {/* <section className="section-padding bg-charcoal">
         <div className="container-max">

@@ -15,12 +15,15 @@ type FormErrors = {
   title?: string
   description?: string
   price?: string
-  image?: string
+}
+
+type Child = {
+  id?: string | null
+  term: string
 }
 
 export default function ServiceForm({
   isArabic,
-//   mode,
   initialService,
   isPending,
   onCancel,
@@ -30,23 +33,45 @@ export default function ServiceForm({
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState<number>(0)
   const [image, setImage] = useState<File | undefined>(undefined)
-  const [featuresText, setFeaturesText] = useState('')
+
+  // ✅ بدل text → array
+  const [children, setChildren] = useState<Child[]>([])
+
   const [errors, setErrors] = useState<FormErrors>({})
 
-useEffect(() => {
-  if (!initialService) return
+  // ✅ INIT
+  useEffect(() => {
+    if (!initialService) return
 
-  setTitle(initialService.title || '')
-  setDescription(initialService.description || '')
-  setPrice(initialService.price || 0)
-  setImage(undefined)
+    setTitle(initialService.title || '')
+    setDescription(initialService.description || '')
+    setPrice(initialService.price || 0)
+    setImage(undefined)
 
-  setFeaturesText(
-    initialService.childernTheServices?.map((c: any) => c.term).join('\n') || ''
-  )
+    // 🔥 أهم تعديل: نحافظ على الـ id
+    setChildren(initialService.childernTheServices || [])
 
-  setErrors({})
-}, [initialService])
+    setErrors({})
+  }, [initialService])
+
+  // ✅ add feature
+  const addChild = () => {
+    setChildren([...children, { id: null, term: '' }])
+  }
+
+  // ✅ update feature
+  const updateChild = (index: number, value: string) => {
+    const updated = [...children]
+    updated[index].term = value
+    setChildren(updated)
+  }
+
+  // ✅ delete feature
+  const removeChild = (index: number) => {
+    const updated = children.filter((_, i) => i !== index)
+    setChildren(updated)
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -55,13 +80,14 @@ useEffect(() => {
       description: description.trim(),
       price,
       image,
-      childernTheServices: featuresText
-        .split('\n')
-        .filter(Boolean)
-        .map((t) => ({ id: null, term: t.trim() })),
+
+      // ✅ نحافظ على id القديم
+      childernTheServices: children.map((c) => ({
+        id: c.id ?? null,
+        term: c.term.trim(),
+      })),
     }
 
-    // simple validation (زي NewsForm style)
     const newErrors: FormErrors = {}
 
     if (!input.title) newErrors.title = 'Title is required'
@@ -89,14 +115,10 @@ useEffect(() => {
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
+          className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white text-right"
         />
 
-        {errors.title && (
-          <p className="text-red-500 text-xs mt-2 font-cairo text-right">
-            {errors.title}
-          </p>
-        )}
+        {errors.title && <p className="text-red-500 text-xs mt-2">{errors.title}</p>}
       </div>
 
       {/* DESCRIPTION */}
@@ -109,86 +131,62 @@ useEffect(() => {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={4}
-          className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
+          className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white text-right"
         />
 
-        {errors.description && (
-          <p className="text-red-500 text-xs mt-2 font-cairo text-right">
-            {errors.description}
-          </p>
-        )}
+        {errors.description && <p className="text-red-500 text-xs mt-2">{errors.description}</p>}
       </div>
 
-      {/* PRICE + IMAGE */}
-      <div className="grid md:grid-cols-2 gap-4">
+      {/* PRICE */}
+      <div>
+        <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
+          {isArabic ? 'السعر' : 'Price'}
+        </label>
 
-        <div>
-          <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-            {isArabic ? 'السعر' : 'Price'}
-          </label>
-
-          <input
-            type="number"
-            value={price}
-            onChange={(e) => setPrice(Number(e.target.value))}
-            className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
-          />
-
-          {errors.price && (
-            <p className="text-red-500 text-xs mt-2 font-cairo text-right">
-              {errors.price}
-            </p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-            {isArabic ? 'الصورة' : 'Image'}
-          </label>
-
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setImage(e.target.files?.[0])}
-            className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white font-cairo text-right"
-          />
-        </div>
-
+        <input
+          type="number"
+          value={price}
+          onChange={(e) => setPrice(Number(e.target.value))}
+          className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white text-right"
+        />
       </div>
 
       {/* FEATURES */}
       <div>
-        <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-          {isArabic ? 'تفاصيل الخدمة (كل سطر ميزة)' : 'Features'}
+        <label className="block text-sm font-cairo font-semibold text-gold mb-4 text-right">
+          {isArabic ? 'تفاصيل الخدمة' : 'Features'}
         </label>
 
-        <textarea
-          value={featuresText}
-          onChange={(e) => setFeaturesText(e.target.value)}
-          rows={5}
-          className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
-        />
+        {children.map((child, index) => (
+          <div key={index} className="flex gap-2 mb-2">
+            <input
+              value={child.term}
+              onChange={(e) => updateChild(index, e.target.value)}
+              className="flex-1 px-3 py-2 bg-charcoal border border-gold/20 rounded-lg text-white text-right"
+            />
+
+            <button
+              type="button"
+              onClick={() => removeChild(index)}
+              className="text-red-400"
+            >
+              ✕
+            </button>
+          </div>
+        ))}
+
+        <Button type="button" onClick={addChild} variant="secondary">
+          {isArabic ? 'إضافة ميزة' : 'Add Feature'}
+        </Button>
       </div>
 
       {/* BUTTONS */}
       <div className="flex gap-4">
-        <Button
-          type="submit"
-          variant="primary"
-          className="flex-1 font-cairo"
-          disabled={isPending}
-          isLoading={isPending}
-        >
+        <Button type="submit" variant="primary" className="flex-1" isLoading={isPending}>
           {isArabic ? 'حفظ' : 'Save'}
         </Button>
 
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={onCancel}
-          className="flex-1 font-cairo"
-          disabled={isPending}
-        >
+        <Button type="button" variant="secondary" onClick={onCancel} className="flex-1">
           {isArabic ? 'إلغاء' : 'Cancel'}
         </Button>
       </div>
