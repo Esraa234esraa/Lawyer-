@@ -128,6 +128,22 @@ export default function AdminConsultations() {
                                 <p className="text-gray-400">{isArabic ? 'رقم الهوية' : 'National ID'}</p>
                                 <p className="text-white">{selectedConsultation.nationalNumber || '—'}</p>
                             </div>
+                            <div>
+                                <p className="text-gray-400 text-sm mb-2">{isArabic ? 'الهوية الوطنية (ملف)' : 'National ID File'}</p>
+                                {selectedConsultation.nationalIdentityPath ? (
+                                    <a
+                                        href={getFullUrl(selectedConsultation.nationalIdentityPath)}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="inline-flex items-center gap-2 text-gold underline"
+                                    >
+                                        <Eye size={16} />
+                                        {isArabic ? 'عرض الهوية' : 'View National ID'}
+                                    </a>
+                                ) : (
+                                    <p className="text-gray-400">{isArabic ? 'غير متوفر' : 'Not Available'}</p>
+                                )}
+                            </div>
                         </div>
                         <div>
                             <p className="text-gray-400 text-sm mb-2">{isArabic ? 'إيصال الدفع' : 'Receipt'}</p>
