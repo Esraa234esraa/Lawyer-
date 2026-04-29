@@ -45,7 +45,14 @@ export default function AdminSidebar() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+useEffect(() => {
+  if (!isMobileOpen) return
 
+  const handleRouteChange = () => setIsMobileOpen(false)
+  window.addEventListener('popstate', handleRouteChange)
+
+  return () => window.removeEventListener('popstate', handleRouteChange)
+}, [isMobileOpen])
   const menuItems = [
     { labelAr: 'لوحة الإحصائيات', labelEn: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
     { labelAr: 'إدارة الخدمات', labelEn: 'Services', href: '/admin/services', icon: Settings },
@@ -100,7 +107,20 @@ export default function AdminSidebar() {
               const Icon = item.icon
               const isActive = location.pathname === item.href
               return (
-                <Link key={item.href} to={item.href}>
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  onClick={e => {
+                    // Close sidebar if open (for mobile, already handled)
+                    if (collapsed && typeof toggle === 'function') toggle();
+                    // Focus the link after navigation
+                    setTimeout(() => {
+                      const el = document.querySelector(`a[href='${item.href}']`);
+                      if (el) (el as HTMLElement).focus();
+                    }, 100);
+                  }}
+                  tabIndex={0}
+                >
                   <motion.div
                     whileHover={{ x: collapsed ? 0 : 4 }}
                     className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-cairo ${isActive
@@ -204,8 +224,10 @@ export default function AdminSidebar() {
                     const isActive = location.pathname === item.href
                     return (
                       <motion.div key={item.href} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: idx * 0.05 }}>
-                        <Link to={item.href} onClick={() => setIsMobileOpen(false)}>
-                          <motion.div
+<Link
+  to={item.href}
+  onClick={() => setIsMobileOpen(false)}
+>                          <motion.div
                             whileHover={{ scale: 1.02, x: -4 }}
                             whileTap={{ scale: 0.98 }}
                             className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-cairo flex-row-reverse ${isActive
