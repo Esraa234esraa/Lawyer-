@@ -4,7 +4,7 @@ export interface Service {
   description: string
   price: number
   childernTheServices: ServiceChild[]
-  image?: string   
+  serviceImagePath?: string
 }
 
 export interface ServiceChild {

@@ -25,12 +25,13 @@ export default function AdminServices() {
   const deleteMutation = useDeleteService()
 
   const services: Service[] = data?.data || []
+console.log(services);
 
   // ================= DETAILS API =================
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null)
 
- const { data: serviceDetails, isLoading: detailsLoading } =
-  useGetServiceById(selectedServiceId ?? '')
+  const { data: serviceDetails, isLoading: detailsLoading } =
+    useGetServiceById(selectedServiceId ?? '')
 
   // ================= STATE =================
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -46,6 +47,14 @@ export default function AdminServices() {
     }
 
     setIsModalOpen(true)
+  }
+
+  const resolveImagePath = (filePath?: string) => {
+    if (!filePath) return ''
+    if (filePath.startsWith('http')) return filePath
+
+    const normalized = filePath.replace(/^\/?wwwroot\/?/i, '')
+    return `https://lawm.runasp.net/${normalized.replace(/\\/g, '/')}`
   }
 
   // ================= FILL FORM AFTER API =================
@@ -84,6 +93,20 @@ export default function AdminServices() {
 
   // ================= TABLE =================
   const columns: Column<Service>[] = [
+    {
+      key: 'serviceImagePath',
+      labelAr: 'صورة الخدمة',
+      labelEn: 'Image',
+      render: (_v, item) =>
+        item.serviceImagePath ? (
+          <img
+            src={resolveImagePath(item.serviceImagePath)} alt="Service"
+            className="w-16 h-16 object-cover rounded-lg"
+          />
+        ) : (
+          <span className="text-gray-500">No Image</span>
+        ),
+    },
     {
       key: 'title',
       labelAr: 'عنوان الخدمة',
@@ -143,34 +166,34 @@ export default function AdminServices() {
       />
 
       {/* FORM MODAL */}
-    <Modal
-  isOpen={isModalOpen}
-  onClose={handleCloseModal}
-  title={editingService ? 'Edit Service' : 'Add Service'}
-  titleAr={editingService ? 'تعديل الخدمة' : 'إضافة خدمة'}
->
-  <ServiceForm
-    isArabic={true}
-    initialService={editingService}
-    isPending={createMutation.isPending || updateMutation.isPending}
-    onSubmit={async (data) => {
-      if (editingService) {
-        await updateMutation.mutateAsync({
-          id: editingService.id,
-          payload: data,
-        })
-        toast.success('تم التحديث')
-      } else {
-        await createMutation.mutateAsync(data)
-        toast.success('تمت الإضافة')
-      }
+      <Modal
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        title={editingService ? 'Edit Service' : 'Add Service'}
+        titleAr={editingService ? 'تعديل الخدمة' : 'إضافة خدمة'}
+      >
+        <ServiceForm
+          isArabic={true}
+          initialService={editingService}
+          isPending={createMutation.isPending || updateMutation.isPending}
+          onSubmit={async (data) => {
+            if (editingService) {
+              await updateMutation.mutateAsync({
+                id: editingService.id,
+                payload: data,
+              })
+              toast.success('تم التحديث')
+            } else {
+              await createMutation.mutateAsync(data)
+              toast.success('تمت الإضافة')
+            }
 
-      setIsModalOpen(false)
-      setEditingService(null)
-    }}
-    onCancel={handleCloseModal}
-  />
-</Modal>
+            setIsModalOpen(false)
+            setEditingService(null)
+          }}
+          onCancel={handleCloseModal}
+        />
+      </Modal>
 
       {/* DETAILS MODAL */}
       <Modal isOpen={isDetailsOpen} onClose={handleCloseDetails} title="Service Details" titleAr="تفاصيل الخدمة">
@@ -178,6 +201,12 @@ export default function AdminServices() {
           <div className="text-white">جاري تحميل التفاصيل...</div>
         ) : serviceDetails?.data ? (
           <div className="space-y-4 text-right">
+            {serviceDetails.data.serviceImagePath && (
+              <img
+                src={resolveImagePath(serviceDetails.data.serviceImagePath)} alt="Service Image"
+                className="w-full h-60 object-cover rounded-lg mb-4"
+              />
+            )}
             <h2 className="text-xl font-bold text-white">
               {serviceDetails.data.title}
             </h2>
@@ -189,6 +218,7 @@ export default function AdminServices() {
             <p className="text-gold font-bold">
               {serviceDetails.data.price} ر.س
             </p>
+
 
             <div>
               <p className="text-gray-400 mb-2">التفاصيل:</p>

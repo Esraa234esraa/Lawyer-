@@ -80,6 +80,7 @@ export const buildServiceFormData = (input: any): FormData => {
   formData.append('Title', input.title.trim())
   formData.append('Description', input.description.trim())
   formData.append('Price', String(input.price))
+  formData.append('ServiceImagePath', input.serviceImagePath || '')
 
   // مهم: نفس منطق الباك
   input.childernTheServices.forEach((c: any, i: number) => {

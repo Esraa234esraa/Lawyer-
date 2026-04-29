@@ -14,6 +14,18 @@ export default function Services() {
   const { data, isLoading, isError } = useGetServices()
   const services: BackendService[] = data?.data || []
 
+  // ================= IMAGE HELPER =================
+  const resolveImagePath = (filePath?: string | null) => {
+    if (!filePath) return ''
+    if (filePath.startsWith('http')) return filePath
+
+    const normalized = filePath
+      .replace(/^\/?wwwroot\/?/i, '')
+      .replace(/\\/g, '/')
+
+    return `https://lawm.runasp.net/${normalized}`
+  }
+
   const service =
     id ? services.find((s) => String(s.id) === String(id)) : undefined
 
@@ -33,6 +45,7 @@ export default function Services() {
     )
   }
 
+  // ================= SERVICE DETAILS =================
   if (id && service) {
     return (
       <div dir="rtl" className="pt-24">
@@ -48,22 +61,22 @@ export default function Services() {
 
             <div className="grid md:grid-cols-2 gap-12 items-center mt-8">
 
-              {/* Image */}
+              {/* IMAGE */}
               <motion.div
                 initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
               >
-                {service.image && (
+                {service.serviceImagePath && (
                   <img
-                    src={service.image}
+                    src={resolveImagePath(service.serviceImagePath)}
                     alt={service.title}
                     className="rounded-lg border-2 border-gold/20 w-full"
                   />
                 )}
               </motion.div>
 
-              {/* Content */}
+              {/* CONTENT */}
               <motion.div
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -126,10 +139,10 @@ export default function Services() {
     )
   }
 
+  // ================= GRID =================
   return (
     <div dir="rtl" className="pt-24">
 
-      {/* Hero */}
       <section className="section-padding bg-charcoal">
         <div className="container-max text-center">
           <motion.div
@@ -150,7 +163,6 @@ export default function Services() {
         </div>
       </section>
 
-      {/* Grid */}
       <section className="section-padding bg-primary-black">
         <div className="container-max">
           <div className="grid md:grid-cols-3 gap-6">

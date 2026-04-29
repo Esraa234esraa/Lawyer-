@@ -32,74 +32,69 @@ export default function ServiceForm({
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState<number>(0)
-  const [image, setImage] = useState<File | undefined>(undefined)
 
-  // ✅ بدل text → array
+  // ✅ الصورة (إضافة فقط)
+  const [image, setImage] = useState<File | null>(null)
+
   const [children, setChildren] = useState<Child[]>([])
-
   const [errors, setErrors] = useState<FormErrors>({})
 
-  // ✅ INIT
+  // ================= INIT =================
   useEffect(() => {
     if (!initialService) return
 
     setTitle(initialService.title || '')
     setDescription(initialService.description || '')
     setPrice(initialService.price || 0)
-    setImage(undefined)
 
-    // 🔥 أهم تعديل: نحافظ على الـ id
+    setImage(null)
+
     setChildren(initialService.childernTheServices || [])
-
     setErrors({})
   }, [initialService])
 
-  // ✅ add feature
+  // ================= FEATURES =================
   const addChild = () => {
     setChildren([...children, { id: null, term: '' }])
   }
 
-  // ✅ update feature
   const updateChild = (index: number, value: string) => {
     const updated = [...children]
     updated[index].term = value
     setChildren(updated)
   }
 
-  // ✅ delete feature
   const removeChild = (index: number) => {
-    const updated = children.filter((_, i) => i !== index)
-    setChildren(updated)
+    setChildren(children.filter((_, i) => i !== index))
   }
 
+  // ================= SUBMIT =================
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    const input = {
-      title: title.trim(),
-      description: description.trim(),
-      price,
-      image,
-
-      // ✅ نحافظ على id القديم
-      childernTheServices: children.map((c) => ({
-        id: c.id ?? null,
-        term: c.term.trim(),
-      })),
-    }
-
     const newErrors: FormErrors = {}
 
-    if (!input.title) newErrors.title = 'Title is required'
-    if (!input.description) newErrors.description = 'Description is required'
-    if (!input.price) newErrors.price = 'Price is required'
+    if (!title.trim()) newErrors.title = 'Title is required'
+    if (!description.trim()) newErrors.description = 'Description is required'
+    if (!price) newErrors.price = 'Price is required'
 
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors)
       return
     }
 
-    setErrors({})
+    // ✔️ نرجّع نفس الشكل القديم + الصورة
+    const input = {
+      title: title.trim(),
+      description: description.trim(),
+      price,
+      ServiceImagePath: image, // 👈 هنا الإضافة الصح
+      childernTheServices: children.map((c) => ({
+        id: c.id ?? null,
+        term: c.term.trim(),
+      })),
+    }
+
     await onSubmit(input)
   }
 
@@ -148,6 +143,20 @@ export default function ServiceForm({
           value={price}
           onChange={(e) => setPrice(Number(e.target.value))}
           className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white text-right"
+        />
+      </div>
+
+      {/* IMAGE (إضافة بسيطة) */}
+      <div>
+        <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
+          {isArabic ? 'صورة الخدمة' : 'Service Image'}
+        </label>
+
+        <input
+          type="file"
+          accept="image/*"
+          onChange={(e) => setImage(e.target.files?.[0] || null)}
+          className="text-white"
         />
       </div>
 
