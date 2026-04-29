@@ -2,7 +2,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Link, useLocation } from 'react-router-dom'
 import { useEffect, useState } from 'react'
 import {
-  BarChart3,
+  // BarChart3,
   Users,
   Briefcase,
   FileText,
@@ -54,19 +54,19 @@ useEffect(() => {
   return () => window.removeEventListener('popstate', handleRouteChange)
 }, [isMobileOpen])
   const menuItems = [
-    { labelAr: 'لوحة الإحصائيات', labelEn: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
+    // { labelAr: 'لوحة الإحصائيات', labelEn: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
     { labelAr: 'إدارة الخدمات', labelEn: 'Services', href: '/admin/services', icon: Settings },
     { labelAr: 'إدارة القضايا', labelEn: 'Cases', href: '/admin/cases', icon: Briefcase },
     { labelAr: 'إداره حجز الاستشارات', labelEn: 'consultation', href: '/admin/consultation', icon: Files },
     { labelAr: 'إدارة الأخبار', labelEn: 'News', href: '/admin/news', icon: FileText },
-    { labelAr: 'ملفات العملاء', labelEn: 'Clients Files', href: '/admin/clients-files', icon: Files },
+    // { labelAr: 'ملفات العملاء', labelEn: 'Clients Files', href: '/admin/clients-files', icon: Files },
     { labelAr: 'الرسائل', labelEn: 'Messages', href: '/admin/messages', icon: MessageSquare },
     { labelAr: 'إدارة العملاء', labelEn: 'Manage Clients', href: '/admin/clients', icon: Users },
     { labelAr: 'أنواع القضايا', labelEn: 'Case Types', href: '/admin/case-types', icon: Briefcase },
     { labelAr: 'طلبات التدريب', labelEn: 'Internships', href: '/admin/internships', icon: GraduationCap },
     { labelAr: 'الفرص الوظيفية', labelEn: 'Opportunities', href: '/admin/opportunities', icon: Briefcase },
     { labelAr: 'تحليل القضايا',  labelEn: 'Cases Analysis',href: '/admin/cases-analysis',icon:BarChart2 },
-    { labelAr: 'كشف الحساب', labelEn: 'Account Summary',href: '/admin/account-summary',icon:FileText },
+    // { labelAr: 'كشف الحساب', labelEn: 'Account Summary',href: '/admin/account-summary',icon:FileText },
     { labelAr: 'تعديل من نحن', labelEn: 'About', href: '/admin/about', icon: Info },
   ]
 

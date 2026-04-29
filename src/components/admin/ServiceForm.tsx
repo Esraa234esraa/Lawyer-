@@ -88,7 +88,7 @@ export default function ServiceForm({
       title: title.trim(),
       description: description.trim(),
       price,
-      ServiceImagePath: image, // 👈 هنا الإضافة الصح
+      serviceImagePath: image, 
       childernTheServices: children.map((c) => ({
         id: c.id ?? null,
         term: c.term.trim(),
