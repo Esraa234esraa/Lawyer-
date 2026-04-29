@@ -1,360 +1,209 @@
 import { motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import DataTable, { Column } from '@/components/admin/DataTable'
 import Modal from '@/components/admin/Modal'
-import { useAdminStore, Service } from '@/store/adminStore'
 import { toast } from 'sonner'
+import ServiceForm from '@/components/admin/ServiceForm'
+
+import {
+  useGetServices,
+  useCreateService,
+  useUpdateService,
+  useDeleteService,
+  useGetServiceById,
+} from '@/hooks/services'
+
+import type { Service } from '@/types/service'
 
 export default function AdminServices() {
-  const { services, consultations, addService, updateService, deleteService } = useAdminStore()
+  // ================= API =================
+  const { data, isLoading, isError } = useGetServices()
+  const createMutation = useCreateService()
+  const updateMutation = useUpdateService()
+  const deleteMutation = useDeleteService()
+
+  const services: Service[] = data?.data || []
+
+  // ================= DETAILS API =================
+  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null)
+
+  const {
+    data: serviceDetails,
+    isLoading: detailsLoading,
+  } = useGetServiceById(selectedServiceId)
+
+  // ================= STATE =================
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isDetailsOpen, setIsDetailsOpen] = useState(false)
-  const [editingId, setEditingId] = useState<number | null>(null)
-  const [selectedService, setSelectedService] = useState<Service | null>(null)
-  const [featuresText, setFeaturesText] = useState('')
-  const [formData, setFormData] = useState<Omit<Service, 'id'>>({
-    titleAr: '',
-    descriptionAr: '',
-    priceAr: '',
-    icon: '',
-    features: [],
-    image: '',
-  })
+  const [editingService, setEditingService] = useState<Service | null>(null)
 
-  const normalize = (value: string) => value.replace(/\s+/g, ' ').trim()
-
-  const getBookingsCountForService = (service: Service) => {
-    const serviceName = normalize(service.titleAr)
-    return consultations.filter((booking) => {
-      const byName = normalize(booking.consultationName || '')
-      const byService = normalize(booking.service || '')
-      return byName === serviceName || byService === serviceName
-    }).length
-  }
-
-  const bookedCountMap = useMemo(() => {
-    const map = new Map<number, number>()
-    services.forEach((service) => {
-      map.set(service.id, getBookingsCountForService(service))
-    })
-    return map
-  }, [services, consultations])
-
+  // ================= OPEN MODAL (CREATE / EDIT) =================
   const handleOpenModal = (service?: Service) => {
+    setEditingService(service || null)
+
     if (service) {
-      setFormData({
-        titleAr: service.titleAr,
-        descriptionAr: service.descriptionAr,
-        priceAr: service.priceAr,
-        icon: service.icon,
-        features: service.features,
-        image: service.image,
-      })
-      setFeaturesText(service.features.join('\n'))
-      setEditingId(service.id)
-    } else {
-      setFormData({
-        titleAr: '',
-        descriptionAr: '',
-        priceAr: '',
-        icon: '',
-        features: [],
-        image: '',
-      })
-      setFeaturesText('')
-      setEditingId(null)
+      setSelectedServiceId(service.id) // 👈 مهم للتعديل
     }
+
     setIsModalOpen(true)
   }
 
+  // ================= FILL FORM AFTER API =================
+  useEffect(() => {
+    if (serviceDetails?.data && editingService) {
+      setEditingService(serviceDetails.data)
+    }
+  }, [serviceDetails])
+
+  // ================= DETAILS =================
   const handleOpenDetails = (service: Service) => {
-    setSelectedService(service)
+    setSelectedServiceId(service.id)
     setIsDetailsOpen(true)
+  }
+
+  const handleCloseDetails = () => {
+    setIsDetailsOpen(false)
+    setSelectedServiceId(null)
   }
 
   const handleCloseModal = () => {
     setIsModalOpen(false)
-    setEditingId(null)
+    setEditingService(null)
+    setSelectedServiceId(null)
   }
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleFeaturesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value
-    setFeaturesText(value)
-    setFormData((prev) => ({
-      ...prev,
-      features: value
-        .split('\n')
-        .map((feature) => feature.trim())
-        .filter(Boolean),
-    }))
-  }
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!formData.features.length) {
-      toast.error('اكتبي على الأقل نقطة واحدة في تفاصيل الخدمة')
-      return
+  // ================= DELETE =================
+  const handleDelete = async (service: Service) => {
+    try {
+      await deleteMutation.mutateAsync(service.id)
+      toast.success('تم حذف الخدمة')
+    } catch (err: any) {
+      toast.error(err.message || 'حدث خطأ')
     }
-
-    if (editingId) {
-      updateService(editingId, formData)
-      toast.success('تم تحديث الخدمة')
-    } else {
-      addService(formData)
-      toast.success('تمت إضافة الخدمة')
-    }
-
-    handleCloseModal()
   }
 
-  const handleDelete = (service: Service) => {
-    deleteService(service.id)
-    toast.success('تم حذف الخدمة')
-  }
-
+  // ================= TABLE =================
   const columns: Column<Service>[] = [
     {
-      key: 'titleAr',
+      key: 'title',
       labelAr: 'عنوان الخدمة',
       labelEn: 'Service Title',
-      render: (_value, item) => item.titleAr,
+      render: (_v, item) => item.title,
     },
     {
-      key: 'priceAr',
+      key: 'price',
       labelAr: 'السعر',
       labelEn: 'Price',
-      render: (value) => value,
+      render: (v) => v,
     },
     {
-      key: 'descriptionAr',
+      key: 'description',
       labelAr: 'الوصف',
       labelEn: 'Description',
-      render: (value) => `${value.slice(0, 45)}${value.length > 45 ? '...' : ''}`,
+      render: (v) => `${v.slice(0, 40)}...`,
     },
     {
-      key: 'features',
-      labelAr: 'تفاصيل الخدمة',
-      labelEn: 'Service Details',
-      render: (value) => `${(value as string[]).length} عناصر`,
-    },
-    {
-      key: 'id',
-      labelAr: 'عدد الحجوزات',
-      labelEn: 'Bookings',
-      render: (_value, item) => (
-        <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-gold/10 text-gold font-cairo text-sm">
-          {bookedCountMap.get(item.id) || 0}
-        </span>
-      ),
+      key: 'childernTheServices',
+      labelAr: 'التفاصيل',
+      labelEn: 'Details',
+      render: (v) => (v?.length || 0) + ' عناصر',
     },
   ]
 
+  // ================= UI =================
+  if (isLoading)
+    return <div className="text-white p-10">جاري التحميل...</div>
+
+  if (isError)
+    return <div className="text-red-400 p-10">حدث خطأ في تحميل البيانات</div>
+
   return (
     <div dir="rtl">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        className="flex items-center gap-4 mb-8"
-      >
-        <div>
-          <h1 className="text-heading-1 font-cairo font-bold text-gradient">
-            إدارة الخدمات
-          </h1>
-          <p className="text-gray-400 font-cairo text-sm">
-            إجمالي الخدمات: {services.length}
-          </p>
-        </div>
-        <Button
-          onClick={() => handleOpenModal()}
-          variant="primary"
-          size="lg"
-          className="font-cairo flex-row-reverse ms-auto"
-        >
-          <Plus size={20} className="me-2" />
+
+      {/* Header */}
+      <motion.div className="flex justify-between mb-6">
+        <h1 className="text-white text-2xl font-bold">إدارة الخدمات</h1>
+
+        <Button onClick={() => handleOpenModal()}>
+          <Plus size={18} />
           إضافة خدمة
         </Button>
       </motion.div>
 
+      {/* TABLE */}
       <DataTable
-        columns={columns}
         data={services}
-        onView={handleOpenDetails}
+        columns={columns}
         onEdit={handleOpenModal}
         onDelete={handleDelete}
+        onView={handleOpenDetails}
         deleteTitleAr="حذف الخدمة"
         deleteTitleEn="Delete Service"
-        getDeleteLabel={(service) => service.titleAr}
+        getDeleteLabel={(service) => service.title}
       />
 
-      <Modal
-        isOpen={isModalOpen}
-        onClose={handleCloseModal}
-        title="Add Service"
-        titleAr="إضافة/تعديل خدمة"
-      >
-        <form onSubmit={handleSubmit} className="space-y-6" dir="rtl">
-          <div>
-            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-              عنوان الخدمة
-            </label>
-            <input
-              type="text"
-              name="titleAr"
-              value={formData.titleAr}
-              onChange={handleChange}
-              required
-              className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
-            />
-          </div>
+      {/* FORM MODAL */}
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
 
-          <div className="grid md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-                السعر
-              </label>
-              <input
-                type="text"
-                name="priceAr"
-                value={formData.priceAr}
-                onChange={handleChange}
-                required
-                placeholder="مثال: 8000 ر.س"
-                className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
-              />
-            </div>
+        {editingService && detailsLoading ? (
+          <div className="text-white">جاري تحميل بيانات التعديل...</div>
+        ) : (
+          <ServiceForm
+            isArabic={true}
+            initialService={editingService} // 👈 البيانات بعد الـ API
+            isPending={createMutation.isPending || updateMutation.isPending}
+            onSubmit={async (data) => {
+              if (editingService) {
+                await updateMutation.mutateAsync({
+                  id: editingService.id,
+                  payload: data,
+                })
+                toast.success('تم التحديث')
+              } else {
+                await createMutation.mutateAsync(data)
+                toast.success('تمت الإضافة')
+              }
 
-            <div>
-              <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-                الرمز
-              </label>
-              <input
-                type="text"
-                name="icon"
-                value={formData.icon}
-                onChange={handleChange}
-                placeholder="📋"
-                className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-              الوصف
-            </label>
-            <textarea
-              name="descriptionAr"
-              value={formData.descriptionAr}
-              onChange={handleChange}
-              required
-              rows={3}
-              className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-              تفاصيل الخدمة (كل سطر نقطة)
-            </label>
-            <textarea
-              name="features"
-              value={featuresText}
-              onChange={handleFeaturesChange}
-              required
-              rows={5}
-              placeholder={'مثال:\nتأسيس الشركات\nالعقود التجارية\nالاندماج والاستحواذ'}
-              className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">
-              رابط الصورة
-            </label>
-            <input
-              type="url"
-              name="image"
-              value={formData.image}
-              onChange={handleChange}
-              className="w-full px-4 py-2 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
-            />
-          </div>
-
-          <div className="flex gap-4">
-            <Button type="submit" variant="primary" className="flex-1 font-cairo">
-              حفظ
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={handleCloseModal}
-              className="flex-1 font-cairo"
-            >
-              إلغاء
-            </Button>
-          </div>
-        </form>
+              setIsModalOpen(false)
+              setEditingService(null)
+            }}
+            onCancel={handleCloseModal}
+          />
+        )}
       </Modal>
 
-      <Modal
-        isOpen={isDetailsOpen}
-        onClose={() => setIsDetailsOpen(false)}
-        title="Service Details"
-        titleAr="تفاصيل الخدمة"
-      >
-        {selectedService && (
-          <div className="space-y-5 font-cairo text-right" dir="rtl">
-            <div className="grid md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-gray-400 text-sm">عنوان الخدمة</p>
-                <p className="text-white font-semibold">{selectedService.titleAr}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">السعر</p>
-                <p className="text-gold font-semibold">{selectedService.priceAr}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">عدد الحجوزات</p>
-                <p className="text-white font-semibold">{bookedCountMap.get(selectedService.id) || 0}</p>
-              </div>
-              <div>
-                <p className="text-gray-400 text-sm">الرابط</p>
-                <p className="text-white break-all">{selectedService.image || 'لا يوجد'}</p>
-              </div>
-            </div>
+      {/* DETAILS MODAL */}
+      <Modal isOpen={isDetailsOpen} onClose={handleCloseDetails}>
+        {detailsLoading ? (
+          <div className="text-white">جاري تحميل التفاصيل...</div>
+        ) : serviceDetails?.data ? (
+          <div className="space-y-4 text-right">
+            <h2 className="text-xl font-bold text-white">
+              {serviceDetails.data.title}
+            </h2>
+
+            <p className="text-gray-300">
+              {serviceDetails.data.description}
+            </p>
+
+            <p className="text-gold font-bold">
+              {serviceDetails.data.price} ر.س
+            </p>
 
             <div>
-              <p className="text-gray-400 text-sm mb-1">الوصف</p>
-              <p className="text-white leading-7">{selectedService.descriptionAr}</p>
-            </div>
-
-            <div>
-              <p className="text-gray-400 text-sm mb-2">ما الذي توفره الخدمة</p>
+              <p className="text-gray-400 mb-2">التفاصيل:</p>
               <ul className="space-y-2">
-                {selectedService.features.map((feature, index) => (
-                  <li key={`${feature}-${index}`} className="flex items-center gap-2 justify-end text-gold">
-                    <span>{feature}</span>
-                    <span>✓</span>
+                {serviceDetails.data.childernTheServices?.map((c) => (
+                  <li key={c.id || c.term} className="text-gold">
+                    ✓ {c.term}
                   </li>
                 ))}
               </ul>
             </div>
           </div>
-        )}
+        ) : null}
       </Modal>
     </div>
   )

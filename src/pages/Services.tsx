@@ -3,15 +3,35 @@ import { useParams, Link } from 'react-router-dom'
 import ServiceCard from '@/components/ui/ServiceCard'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAdminStore } from '@/store/adminStore'
+import { useGetServices } from '@/hooks/services'
+import type { Service as BackendService, ServiceChild } from '@/types/service'
 import { ArrowRight } from 'lucide-react'
 
 export default function Services() {
   const { isArabic } = useLanguage()
   const { id } = useParams()
-  const { services } = useAdminStore()
 
-  const service = id ? services.find((s) => s.id === parseInt(id)) : null
+  const { data, isLoading, isError } = useGetServices()
+  const services: BackendService[] = data?.data || []
+
+  const service =
+    id ? services.find((s) => String(s.id) === String(id)) : undefined
+
+  if (isLoading) {
+    return (
+      <div className="pt-24 text-center text-gray-300 font-cairo">
+        {isArabic ? 'جاري تحميل الخدمات...' : 'Loading services...'}
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="pt-24 text-center text-red-400 font-cairo">
+        {isArabic ? 'تعذر تحميل البيانات' : 'Failed to load data'}
+      </div>
+    )
+  }
 
   if (id && service) {
     return (
@@ -27,18 +47,23 @@ export default function Services() {
             </Link>
 
             <div className="grid md:grid-cols-2 gap-12 items-center mt-8">
+
+              {/* Image */}
               <motion.div
                 initial={{ opacity: 0, x: -30 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ duration: 0.8 }}
               >
-                <img
-                  src={service.image}
-                  alt={isArabic ? service.titleAr : service.titleEn}
-                  className="rounded-lg border-2 border-gold/20 w-full"
-                />
+                {service.image && (
+                  <img
+                    src={service.image}
+                    alt={service.title}
+                    className="rounded-lg border-2 border-gold/20 w-full"
+                  />
+                )}
               </motion.div>
 
+              {/* Content */}
               <motion.div
                 initial={{ opacity: 0, x: 30 }}
                 animate={{ opacity: 1, x: 0 }}
@@ -46,32 +71,34 @@ export default function Services() {
                 className="text-right"
               >
                 <h1 className="text-heading-1 font-cairo font-bold mb-2 text-gradient">
-                  {isArabic ? service.titleAr : service.titleEn}
+                  {service.title}
                 </h1>
 
-                {/* ✅ السعر */}
                 <p className="text-3xl font-bold text-gold mb-4">
-                  {isArabic ? service.priceAr : service.priceEn || service.priceAr}
+                  {service.price ? `${service.price} ر.س` : ''}
                 </p>
 
                 <p className="text-gray-300 font-cairo mb-6 text-lg">
-                  {isArabic ? service.descriptionAr : service.descriptionEn || service.descriptionAr}
+                  {service.description}
                 </p>
 
                 <div className="mb-8">
                   <h3 className="text-heading-3 font-cairo font-bold mb-4 text-gold">
                     {isArabic ? 'ما الذي نقدمه' : 'What We Offer'}
                   </h3>
+
                   <ul className="space-y-3">
-                    {service.features.map((feature, idx) => (
-                      <li
-                        key={idx}
-                        className="flex items-center gap-3 font-cairo text-gray-300 flex-row-reverse"
-                      >
-                        <span className="text-gold">✓</span>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
+                    {(service.childernTheServices || []).map(
+                      (child: ServiceChild, idx: number) => (
+                        <li
+                          key={child.id ?? idx}
+                          className="flex items-center gap-3 font-cairo text-gray-300 flex-row-reverse"
+                        >
+                          <span className="text-gold">✓</span>
+                          <span>{child.term}</span>
+                        </li>
+                      )
+                    )}
                   </ul>
                 </div>
 
@@ -79,9 +106,9 @@ export default function Services() {
                   to="/book-consultation"
                   state={{
                     serviceId: service.id,
-                    serviceNameAr: service.titleAr,
-                    serviceNameEn: service.titleEn || service.titleAr,
-                    servicePriceSar: Number(service.priceAr.replace(/[^0-9]/g, '')) || 750,
+                    serviceNameAr: service.title,
+                    serviceNameEn: service.title,
+                    servicePriceSar: service.price || 750,
                   }}
                 >
                   <Button
@@ -101,6 +128,7 @@ export default function Services() {
 
   return (
     <div dir="rtl" className="pt-24">
+
       {/* Hero */}
       <section className="section-padding bg-charcoal">
         <div className="container-max text-center">
@@ -112,6 +140,7 @@ export default function Services() {
             <h1 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">
               {isArabic ? 'خدماتنا المتخصصة' : 'Our Services'}
             </h1>
+
             <p className="text-gray-300 font-cairo max-w-2xl mx-auto">
               {isArabic
                 ? 'مجموعة شاملة من الخدمات القانونية المتخصصة'
@@ -121,11 +150,12 @@ export default function Services() {
         </div>
       </section>
 
-      {/* Services Grid */}
+      {/* Grid */}
       <section className="section-padding bg-primary-black">
         <div className="container-max">
           <div className="grid md:grid-cols-3 gap-6">
-            {services.map((service) => (
+
+            {services.map((service: BackendService) => (
               <motion.div
                 key={service.id}
                 initial={{ opacity: 0, y: 20 }}
@@ -134,18 +164,21 @@ export default function Services() {
               >
                 <Link to={`/services/${service.id}`}>
                   <ServiceCard
-                    titleAr={service.titleAr}
-                    titleEn={service.titleEn || service.titleAr}
-                    descriptionAr={service.descriptionAr}
-                    descriptionEn={service.descriptionEn || service.descriptionAr}
-                    priceAr={service.priceAr}
-                    priceEn={service.priceEn || service.priceAr}
-                    icon={service.icon}
-                    features={service.features}
+                    titleAr={service.title}
+                    titleEn={service.title}
+                    descriptionAr={service.description}
+                    descriptionEn={service.description}
+                    priceAr={service.price ? `${service.price} ر.س` : ''}
+                    priceEn={service.price ? `${service.price} SAR` : ''}
+                    icon={''}
+                    features={(service.childernTheServices || []).map(
+                      (c: ServiceChild) => c.term
+                    )}
                   />
                 </Link>
               </motion.div>
             ))}
+
           </div>
         </div>
       </section>
