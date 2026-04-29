@@ -110,7 +110,7 @@ useEffect(() => {
                 <Link
                   key={item.href}
                   to={item.href}
-                  onClick={e => {
+                  onClick={_e => {
                     // Close sidebar if open (for mobile, already handled)
                     if (collapsed && typeof toggle === 'function') toggle();
                     // Focus the link after navigation

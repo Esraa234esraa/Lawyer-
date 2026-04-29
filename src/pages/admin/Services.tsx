@@ -29,10 +29,8 @@ export default function AdminServices() {
   // ================= DETAILS API =================
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null)
 
-  const {
-    data: serviceDetails,
-    isLoading: detailsLoading,
-  } = useGetServiceById(selectedServiceId)
+ const { data: serviceDetails, isLoading: detailsLoading } =
+  useGetServiceById(selectedServiceId ?? '')
 
   // ================= STATE =================
   const [isModalOpen, setIsModalOpen] = useState(false)
@@ -145,37 +143,37 @@ export default function AdminServices() {
       />
 
       {/* FORM MODAL */}
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal}>
+    <Modal
+  isOpen={isModalOpen}
+  onClose={handleCloseModal}
+  title={editingService ? 'Edit Service' : 'Add Service'}
+  titleAr={editingService ? 'تعديل الخدمة' : 'إضافة خدمة'}
+>
+  <ServiceForm
+    isArabic={true}
+    initialService={editingService}
+    isPending={createMutation.isPending || updateMutation.isPending}
+    onSubmit={async (data) => {
+      if (editingService) {
+        await updateMutation.mutateAsync({
+          id: editingService.id,
+          payload: data,
+        })
+        toast.success('تم التحديث')
+      } else {
+        await createMutation.mutateAsync(data)
+        toast.success('تمت الإضافة')
+      }
 
-        {editingService && detailsLoading ? (
-          <div className="text-white">جاري تحميل بيانات التعديل...</div>
-        ) : (
-          <ServiceForm
-            isArabic={true}
-            initialService={editingService} // 👈 البيانات بعد الـ API
-            isPending={createMutation.isPending || updateMutation.isPending}
-            onSubmit={async (data) => {
-              if (editingService) {
-                await updateMutation.mutateAsync({
-                  id: editingService.id,
-                  payload: data,
-                })
-                toast.success('تم التحديث')
-              } else {
-                await createMutation.mutateAsync(data)
-                toast.success('تمت الإضافة')
-              }
-
-              setIsModalOpen(false)
-              setEditingService(null)
-            }}
-            onCancel={handleCloseModal}
-          />
-        )}
-      </Modal>
+      setIsModalOpen(false)
+      setEditingService(null)
+    }}
+    onCancel={handleCloseModal}
+  />
+</Modal>
 
       {/* DETAILS MODAL */}
-      <Modal isOpen={isDetailsOpen} onClose={handleCloseDetails}>
+      <Modal isOpen={isDetailsOpen} onClose={handleCloseDetails} title="Service Details" titleAr="تفاصيل الخدمة">
         {detailsLoading ? (
           <div className="text-white">جاري تحميل التفاصيل...</div>
         ) : serviceDetails?.data ? (

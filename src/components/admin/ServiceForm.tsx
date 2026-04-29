@@ -5,7 +5,6 @@ type Service = any
 
 type Props = {
   isArabic: boolean
-  mode: 'create' | 'edit'
   initialService?: Service | null
   isPending: boolean
   onCancel: () => void
@@ -21,7 +20,7 @@ type FormErrors = {
 
 export default function ServiceForm({
   isArabic,
-  mode,
+//   mode,
   initialService,
   isPending,
   onCancel,
