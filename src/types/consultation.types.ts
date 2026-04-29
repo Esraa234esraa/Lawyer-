@@ -21,6 +21,10 @@ export interface ApplyConsultationInput {
   email: string;
   phone: string;
   paymentReceiptPath: File;
+  nationalNumber: string;
+  nationalIdentityPath: File;
+  consultationRequesAttachemnt: File;
+  details: string;
 }
 
 export interface ConfirmConsultationInput {

@@ -10,10 +10,14 @@ import {
 // Helper to build FormData for apply
 function buildApplyConsultationFormData(input: ApplyConsultationInput) {
   const formData = new FormData();
-  formData.append('PaymentReceiptPath', input.paymentReceiptPath);
   formData.append('FullName', input.fullName);
   formData.append('Email', input.email);
   formData.append('Phone', input.phone);
+  formData.append('PaymentReceiptPath', input.paymentReceiptPath);
+  formData.append('NationalNumber', input.nationalNumber);
+  formData.append('NationalIdentityPath', input.nationalIdentityPath);
+  formData.append('ConsultationRequesAttachemnt', input.consultationRequesAttachemnt);
+  formData.append('Details', input.details);
   return formData;
 }
 

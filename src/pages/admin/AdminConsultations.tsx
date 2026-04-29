@@ -7,8 +7,9 @@ import {
     useConfirmConsultation,
 } from '@/hooks/consultation'
 import DataTable, { Column } from '@/components/admin/DataTable'
+import { CheckSquare, Square } from 'lucide-react'
 import Modal from '@/components/admin/Modal'
-import StatusBadge from '@/components/admin/StatusBadge'
+// import StatusBadge from '@/components/admin/StatusBadge'
 import { toast } from 'sonner'
 
 // Helper to get full URL for file paths
@@ -21,179 +22,59 @@ function getFullUrl(path: string) {
     return BASE_URL.replace(/\/$/, '') + clean;
 }
 import { Eye } from 'lucide-react'
-function ConfirmConsultationButton({ consultation }: { consultation: any }) {
-    const { isArabic } = useLanguage();
-    const [nationalNumber, setNationalNumber] = useState('');
-    const [nationalIdentityPath, setNationalIdentityPath] = useState<File | null>(null);
-    const [consultationRequesAttachemnt, setConsultationRequesAttachemnt] = useState<File | null>(null);
-    const [details, setDetails] = useState('');
-    const confirmMutation = useConfirmConsultation(consultation.id);
-
-    const handleSubmit = (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!nationalNumber || !nationalIdentityPath || !consultationRequesAttachemnt) {
-            toast.error(isArabic ? 'يرجى تعبئة جميع الحقول المطلوبة' : 'Please fill all required fields');
-            return;
-        }
-        confirmMutation.mutate({
-            nationalNumber,
-            nationalIdentityPath,
-            consultationRequesAttachemnt,
-            details,
-        });
-    };
-
-    if (consultation.isConfirmed) {
-        return <span className="px-4 py-2 rounded-lg bg-green-600 text-white font-cairo">{isArabic ? 'تم التأكيد' : 'Confirmed'}</span>;
-    }
-
-    return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-2 items-end">
-            <input
-                type="text"
-                placeholder={isArabic ? 'رقم الهوية الوطنية' : 'National Number'}
-                value={nationalNumber}
-                onChange={e => setNationalNumber(e.target.value)}
-                className="input-gold w-full"
-                required
-            />
-            <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={e => setNationalIdentityPath(e.target.files?.[0] || null)}
-                className="input-gold w-full"
-                required
-            />
-            <input
-                type="file"
-                accept=".pdf,.jpg,.jpeg,.png"
-                onChange={e => setConsultationRequesAttachemnt(e.target.files?.[0] || null)}
-                className="input-gold w-full"
-                required
-            />
-            <textarea
-                placeholder={isArabic ? 'تفاصيل إضافية (اختياري)' : 'Additional details (optional)'}
-                value={details}
-                onChange={e => setDetails(e.target.value)}
-                className="input-gold w-full"
-                rows={2}
-            />
-            <button
-                type="submit"
-                className="px-4 py-2 rounded-lg bg-green-600 text-white font-cairo"
-                disabled={confirmMutation.isPending}
-            >
-                {confirmMutation.isPending ? (isArabic ? 'جاري التأكيد...' : 'Confirming...') : (isArabic ? 'تأكيد الاستشارة' : 'Confirm Consultation')}
-            </button>
-        </form>
-    );
-}
 
 export default function AdminConsultations() {
-    const { isArabic } = useLanguage()
-    const { data: consultations = [] } = useGetAllConsultations()
-    const deleteMutation = useDeleteConsultation()
-    const [selectedConsultation, setSelectedConsultation] = useState<any | null>(null)
+    const { isArabic } = useLanguage();
+    const [selectedConsultation, setSelectedConsultation] = useState<any>(null);
+    const [confirmingId, setConfirmingId] = useState<number | null>(null);
+    const { data: consultations = [] } = useGetAllConsultations();
+    const deleteMutation = useDeleteConsultation();
+    const [confirmMutationId, setConfirmMutationId] = useState<number | null>(null);
+    const confirmMutation = useConfirmConsultation(confirmMutationId ?? 0);
 
-    const handleDelete = (item: any) => {
-        deleteMutation.mutate(item.id, {
-            onSuccess: () => toast.success(isArabic ? 'تم الحذف' : 'Deleted'),
-            onError: (err: any) => toast.error(err?.message || 'Delete failed'),
-        })
-    }
-    // Confirmation will be handled in modal (see below)
-
-    const handleView = (item: any) => {
-        setSelectedConsultation(item)
-    }
-    const columns: Column<any>[] = [
-        {
-            key: 'fullName',
-            labelAr: 'الاسم',
-            labelEn: 'Name',
-        },
-        {
-            key: 'email',
-            labelAr: 'البريد',
-            labelEn: 'Email',
-        },
-        {
-            key: 'phone',
-            labelAr: 'الهاتف',
-            labelEn: 'Phone',
-        },
-        // Add more columns as needed, mapping backend fields
-        {
-            key: 'paidAmountSar',
-            labelAr: 'المبلغ المدفوع',
-            labelEn: 'Paid Amount',
-            render: (value) => (value ? `${value} SAR` : '—'),
-        },
-        {
-            key: 'nationalId',
-            labelAr: 'الهوية الوطنية',
-            labelEn: 'National ID',
-            render: (value) => value || '—',
-        },
-        {
-            key: 'nationalAddress',
-            labelAr: 'العنوان الوطني',
-            labelEn: 'National Address',
-            render: (value) => (
-                <span className="line-clamp-1 max-w-[220px]">{value || '—'}</span>
-            ),
-        },
-        {
-            key: 'service',
-            labelAr: 'نوع الدعوى',
-            labelEn: 'Case Type',
-        },
-        {
-            key: 'details',
-            labelAr: 'تفاصيل الاستشارة',
-            labelEn: 'Complaint Text',
-            render: (value) => (
-                <span className="line-clamp-1 max-w-[200px]">{value}</span>
-            ),
-        },
-        {
-            key: 'paymentReceiptName',
-            labelAr: 'إيصال الدفع',
-            labelEn: 'Receipt',
-            render: (value) => value || '—',
-        },
-        {
-            key: 'caseAttachments',
-            labelAr: 'مرفقات الدعوى',
-            labelEn: 'Case Files',
-            render: (value) =>
-                Array.isArray(value) && value.length ? (
-                    <span>{`${value.length} ملف`}</span>
-                ) : (
-                    '—'
-                ),
-        },
-        {
-            key: 'paymentStatus',
-            labelAr: 'الدفع',
-            labelEn: 'Payment',
-            render: (value) => <StatusBadge status={value} />,
-        },
-        {
-            key: 'paymentReference',
-            labelAr: 'تفاصيل الدفع',
-            labelEn: 'Payment Ref',
-            render: (_value, item) =>
-                item.paymentStatus === 'paid'
-                    ? item.paymentReference || '—'
-                    : 'لم يتم الدفع',
-        },
-        {
-            key: 'createdAt',
-            labelAr: 'التاريخ',
-            labelEn: 'Date',
-        },
-    ]
+    // Handlers
+    const handleDelete = async (item: any) => {
+        try {
+            await deleteMutation.mutateAsync(item.id);
+            toast.success(isArabic ? 'تم حذف الحجز بنجاح' : 'Consultation deleted successfully');
+        } catch {
+            toast.error(isArabic ? 'حدث خطأ أثناء الحذف' : 'Error deleting consultation');
+        }
+    };
+    const handleView = (item: any) => setSelectedConsultation(item);
+    const handleConfirm = async (item: any) => {
+        setConfirmingId(item.id);
+        setConfirmMutationId(item.id);
+        try {
+            await confirmMutation.mutateAsync({
+                nationalNumber: item.nationalNumber,
+                nationalIdentityPath: item.nationalIdentityPath,
+                consultationRequesAttachemnt: item.consultationRequesAttachemnt,
+                details: item.details,
+            });
+            toast.success(isArabic ? 'تم تأكيد الدفع' : 'Payment confirmed');
+        } catch {
+            toast.error(isArabic ? 'حدث خطأ أثناء التأكيد' : 'Error confirming payment');
+        } finally {
+            setConfirmingId(null);
+            setConfirmMutationId(null);
+        }
+    };
+        const safeRender = (value: any) => {
+            if (value === null || value === undefined) return '—';
+            if (typeof value === 'object') return Array.isArray(value) ? (value.length ? `${value.length} عنصر` : '—') : '—';
+            return String(value);
+        };
+        const columns: Column<any>[] = [
+            { key: 'fullName', labelAr: 'الاسم', labelEn: 'Name', render: safeRender },
+            { key: 'email', labelAr: 'البريد الإلكتروني', labelEn: 'Email', render: safeRender },
+            { key: 'phone', labelAr: 'رقم الجوال', labelEn: 'Phone', render: safeRender },
+            { key: 'nationalNumber', labelAr: 'رقم الهوية الوطنية', labelEn: 'National Number', render: safeRender },
+            { key: 'nationalIdentityPath', labelAr: 'الهوية الوطنية (ملف)', labelEn: 'National ID File', render: (value) => (typeof value === 'string' && value) ? (<a href={getFullUrl(value)} target="_blank" rel="noreferrer" className="text-gold underline">{isArabic ? 'عرض' : 'View'}</a>) : '—' },
+            { key: 'details', labelAr: 'تفاصيل الشكوى', labelEn: 'Complaint Details', render: safeRender },
+            { key: 'paymentReceiptPath', labelAr: 'إيصال الدفع', labelEn: 'Receipt', render: (value) => (typeof value === 'string' && value) ? (<a href={getFullUrl(value)} target="_blank" rel="noreferrer" className="text-gold underline">{isArabic ? 'عرض' : 'View'}</a>) : '—' },
+            { key: 'isConfirmed', labelAr: 'تأكيد الدفع', labelEn: 'Confirm Payment', render: (value, item) => value ? (<span className="flex items-center gap-1 text-green-500 font-cairo"><CheckSquare size={18} />{isArabic ? 'تم التأكيد' : 'Confirmed'}</span>) : (<button className="flex items-center gap-1 px-2 py-1 bg-gold/20 text-gold rounded hover:bg-gold/40 transition disabled:opacity-60" onClick={() => handleConfirm(item)} disabled={confirmMutation.isPending && confirmingId === item.id}><Square size={18} />{confirmMutation.isPending && confirmingId === item.id ? (isArabic ? 'جاري التأكيد...' : 'Confirming...') : (isArabic ? 'تأكيد الدفع' : 'Confirm Payment')}</button>) },
+        ];
 
     return (
         <div dir="rtl">
@@ -267,7 +148,6 @@ export default function AdminConsultations() {
                             </p>
                         </div>
                         <div className="flex justify-end gap-3 pt-2">
-                            <ConfirmConsultationButton consultation={selectedConsultation} />
                             <button
                                 type="button"
                                 onClick={() => setSelectedConsultation(null)}

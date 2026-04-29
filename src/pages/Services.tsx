@@ -3,10 +3,9 @@ import { useParams, Link } from 'react-router-dom'
 import ServiceCard from '@/components/ui/ServiceCard'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
-import { useAdminStore } from '@/store/adminStore'
 import { ArrowRight } from 'lucide-react'
+import { useAdminStore } from '@/store/adminStore'
 
-export default function Services() {
   const { isArabic } = useLanguage()
   const { id } = useParams()
   const { services } = useAdminStore()
@@ -151,4 +150,3 @@ export default function Services() {
       </section>
     </div>
   )
-}

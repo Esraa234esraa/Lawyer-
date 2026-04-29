@@ -114,16 +114,27 @@ export default function DataTable<T extends { id: number | string }>({
                   transition={{ duration: 0.3, delay: idx * 0.05 }}
                   className="border-b border-gold/10 hover:bg-charcoal/50 transition-colors"
                 >
-                  {columns.map((column) => (
-                    <td
-                      key={String(column.key)}
-                      className="px-6 py-4 text-sm text-gray-300 font-cairo text-right whitespace-nowrap"
-                    >
-                      {column.render
-                        ? column.render((item as any)[column.key], item)
-                        : String((item as any)[column.key])}
-                    </td>
-                  ))}
+                  {columns.map((column) => {
+                    const value = (item as any)[column.key];
+                    let displayValue;
+                    if (column.render) {
+                      displayValue = column.render(value, item);
+                    } else if (value === null || value === undefined) {
+                      displayValue = '—';
+                    } else if (typeof value === 'object') {
+                      displayValue = Array.isArray(value) ? (value.length ? `${value.length} عنصر` : '—') : '—';
+                    } else {
+                      displayValue = String(value);
+                    }
+                    return (
+                      <td
+                        key={String(column.key)}
+                        className="px-6 py-4 text-sm text-gray-300 font-cairo text-right whitespace-nowrap"
+                      >
+                        {displayValue}
+                      </td>
+                    );
+                  })}
                   {actions && (
                     <td className="px-6 py-4 text-right whitespace-nowrap">
                       <div className="flex items-center gap-2 justify-end">

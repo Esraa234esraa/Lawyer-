@@ -5,10 +5,14 @@ import { useGetIssueById, useGetIssueTypes } from '@/hooks/issues'
 import { useLanguage } from '@/hooks/useLanguage'
 
 const resolveAttachmentPath = (filePath: string | undefined) => {
-  if (!filePath) return ''
-  if (filePath.startsWith('http')) return filePath
-  const normalized = filePath.replace(/^\/?wwwroot\/?/i, '')
-  return `https://lawm.runasp.net/${normalized}`
+  if (!filePath) return '';
+  if (filePath.startsWith('http')) return filePath;
+  // إذا كان يبدأ بـ / فقط أضف الدومين مباشرة
+  if (filePath.startsWith('/')) {
+    return `https://lawm.runasp.net${filePath}`;
+  }
+  // إذا كان نسبي أضف / ثم الدومين
+  return `https://lawm.runasp.net/${filePath}`;
 }
 
 export default function AdminCaseDetails() {
@@ -63,11 +67,11 @@ export default function AdminCaseDetails() {
 
       <h1 className="text-heading-1 text-gold font-cairo">{issue.titeleAr}</h1>
 
-      {previewImage && (
+      {/* {previewImage && (
         <div className="rounded-xl overflow-hidden border border-gold/20">
           <img src={previewImage} alt={issue.titeleAr} className="w-full h-72 object-cover" />
         </div>
-      )}
+      )} */}
 
       <div className="bg-charcoal border border-gold/20 rounded-xl p-8 space-y-6">
         <div className="flex flex-wrap gap-4">
@@ -87,9 +91,18 @@ export default function AdminCaseDetails() {
           {clients.length > 0 ? (
             <div className="space-y-3">
               {clients.map((client, index) => (
-                <div key={`${client.nationalId}-${index}`} className="rounded-lg border border-gold/20 p-4 bg-black/20">
-                  <p className="text-white text-sm">{client.name}</p>
-                  <p className="text-gray-400 text-xs">{client.nationalId}</p>
+                <div key={`${client.nationalId}-${index}`} className="rounded-lg border border-gold/20 p-4 bg-black/20 flex items-center gap-4">
+                  {client.nationalIdentityPath && (
+                    <img
+                      src={resolveAttachmentPath(client.nationalIdentityPath)}
+                      alt="الهوية الوطنية"
+                      className="w-16 h-16 rounded object-cover border border-gold/30"
+                    />
+                  )}
+                  <div>
+                    <p className="text-white text-sm">{client.name}</p>
+                    <p className="text-gray-400 text-xs">{client.nationalId}</p>
+                  </div>
                 </div>
               ))}
             </div>

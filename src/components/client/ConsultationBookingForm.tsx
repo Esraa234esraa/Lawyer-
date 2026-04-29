@@ -46,14 +46,14 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
     phone: '',
     consultationKey: '',
     service: '',
-    nationalAddress: '',
-    nationalId: '',
+    nationalNumber: '',
     details: '',
   })
 
   const [currentStep, setCurrentStep] = useState(1)
   const [receiptFile, setReceiptFile] = useState<File | null>(null)
   // Removed unused: receiptPreview, setReceiptPreview
+  const [nationalIdFile, setNationalIdFile] = useState<File | null>(null)
   const [caseFiles, setCaseFiles] = useState<File[]>([])
   // Removed unused: paymentCompleted
   const [submitted, setSubmitted] = useState(false)
@@ -85,6 +85,11 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
         (isArabic
           ? state?.serviceNameAr || matchedOption.nameAr
           : state?.serviceNameEn || matchedOption.nameEn),
+      name: prev.name || '',
+      email: prev.email || '',
+      phone: prev.phone || '',
+      nationalNumber: prev.nationalNumber || '',
+      details: prev.details || '',
     }))
   }, [consultationOptions, isArabic, location.search, location.state])
 
@@ -111,14 +116,20 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
   const handleCaseFilesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files || [])
     if (!files.length) return
-
     const totalFiles = caseFiles.length + files.length
     if (totalFiles > 10) {
       toast.error(isArabic ? 'الحد الأقصى 10 ملفات' : 'Maximum 10 files allowed')
       return
     }
-
     setCaseFiles((prev) => [...prev, ...files])
+  }
+
+  const handleNationalIdFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setNationalIdFile(file)
+      toast.success(isArabic ? `تم تحميل: ${file.name}` : `Uploaded: ${file.name}`)
+    }
   }
 
   const removeCaseFile = (index: number) => {
@@ -138,8 +149,8 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
       return true
     }
     if (step === 3) {
-      if (!formData.name || !formData.email || !formData.phone || !formData.nationalAddress || !formData.nationalId || !formData.service) {
-        toast.error(isArabic ? 'يرجى استكمال بيانات الدعوى المطلوبة' : 'Please complete the required case details')
+      if (!formData.name || !formData.email || !formData.phone || !formData.nationalNumber || !nationalIdFile) {
+        toast.error(isArabic ? 'يرجى استكمال جميع البيانات ورفع الهوية الوطنية' : 'Please complete all details and upload National ID file')
         return false
       }
       return true
@@ -149,8 +160,8 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
         toast.error(isArabic ? 'يرجى كتابة نص الشكوى' : 'Please enter the complaint text')
         return false
       }
-      if (caseFiles.length < 2) {
-        toast.error(isArabic ? 'الحد الأدنى ملفين لمرفقات الدعوى' : 'At least 2 case files are required')
+      if (caseFiles.length < 1) {
+        toast.error(isArabic ? 'يرجى رفع مرفق واحد على الأقل' : 'At least 1 attachment is required')
         return false
       }
       if (caseFiles.length > 10) {
@@ -185,7 +196,23 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
 
     setIsLoading(true)
     try {
-      // Call backend mutation for consultation request
+      // تحقق من القيم قبل الإرسال
+      if (!formData.name || !formData.email || !formData.phone || !formData.nationalNumber || !receiptFile || !nationalIdFile) {
+        toast.error(isArabic ? 'يرجى تعبئة جميع الحقول المطلوبة ورفع الملفات' : 'Please fill all required fields and upload files')
+        setIsLoading(false)
+        return
+      }
+      // طباعة القيم في الكونسول للمراجعة
+      console.log('FullName:', formData.name)
+      console.log('Email:', formData.email)
+      console.log('Phone:', formData.phone)
+      console.log('PaymentReceiptPath:', receiptFile)
+      console.log('NationalNumber:', formData.nationalNumber)
+      console.log('NationalIdentityPath:', nationalIdFile)
+      console.log('ConsultationRequesAttachemnt:', caseFiles)
+      console.log('Details:', formData.details)
+
+      // إرسال القيم مباشرة كـ input object وليس FormData
       await new Promise((resolve, reject) => {
         applyConsultation(
           {
@@ -193,6 +220,10 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
             email: formData.email,
             phone: formData.phone,
             paymentReceiptPath: receiptFile!,
+            nationalNumber: formData.nationalNumber,
+            nationalIdentityPath: nationalIdFile!,
+            consultationRequesAttachemnt: caseFiles[0],
+            details: formData.details,
           },
           {
             onSuccess: () => {
@@ -368,40 +399,24 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
                   className="input-gold"
                 />
               </div>
-
               <div>
                 <label className="label-gold">
-                  {isArabic ? 'رقم الهوية الوطنية *' : 'National ID *'}
+                  {isArabic ? 'رقم الهوية الوطنية *' : 'National ID Number *'}
                 </label>
                 <input
                   type="text"
-                  name="nationalId"
-                  value={formData.nationalId}
+                  name="nationalNumber"
+                  value={formData.nationalNumber}
                   onChange={handleChange}
                   required
                   className="input-gold"
                 />
               </div>
             </div>
-
-            <div>
-              <label className="label-gold">
-                {isArabic ? 'العنوان الوطني *' : 'National Address *'}
-              </label>
-              <input
-                type="text"
-                name="nationalAddress"
-                value={formData.nationalAddress}
-                onChange={handleChange}
-                required
-                className="input-gold"
-              />
-            </div>
-
             <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <label className="label-gold">
-                  {isArabic ? 'رقم الهاتف *' : 'Phone *'}
+                  {isArabic ? 'رقم الجوال *' : 'Phone *'}
                 </label>
                 <input
                   type="tel"
@@ -412,7 +427,6 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
                   className="input-gold"
                 />
               </div>
-
               <div>
                 <label className="label-gold">
                   {isArabic ? 'البريد الإلكتروني *' : 'Email *'}
@@ -427,20 +441,22 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
                 />
               </div>
             </div>
-
             <div>
               <label className="label-gold">
-                {isArabic ? 'نوع الدعوى *' : 'Case Type *'}
+                {isArabic ? 'رفع الهوية الوطنية *' : 'Upload National ID *'}
               </label>
-              <input
-                type="text"
-                name="service"
-                value={formData.service}
-                onChange={handleChange}
-                required
-                className="input-gold"
-                placeholder={isArabic ? 'مثال: نزاع تجاري' : 'Example: Commercial dispute'}
-              />
+              <label className="flex items-center justify-center gap-3 px-4 py-4 bg-charcoal border-2 border-dashed border-gold/30 rounded-lg hover:border-gold/60 transition-colors cursor-pointer">
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.pdf"
+                  onChange={handleNationalIdFileChange}
+                  className="hidden"
+                />
+                <Upload size={20} className="text-gold" />
+                <span className="text-gold font-cairo">
+                  {nationalIdFile ? nationalIdFile.name : (isArabic ? 'اختر ملف الهوية الوطنية' : 'Choose National ID file')}
+                </span>
+              </label>
             </div>
           </div>
         )}
@@ -464,7 +480,7 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
 
             <div>
               <label className="label-gold">
-                {isArabic ? 'مرفقات الدعوى *' : 'Case Attachments *'}
+                {isArabic ? 'مرفقات الاستشارة *' : 'Consultation Attachments *'}
               </label>
               <label className="flex items-center justify-center gap-3 px-4 py-4 bg-charcoal border-2 border-dashed border-gold/30 rounded-lg hover:border-gold/60 transition-colors cursor-pointer">
                 <input
@@ -476,13 +492,13 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
                 />
                 <Upload size={20} className="text-gold" />
                 <span className="text-gold font-cairo">
-                  {isArabic ? 'اختر ملفات الدعوى' : 'Choose case files'}
+                  {isArabic ? 'اختر مرفق أو أكثر' : 'Choose one or more attachments'}
                 </span>
               </label>
               <p className="text-xs text-gray-500 font-cairo mt-2">
                 {isArabic
-                  ? 'الحد الأدنى ملفين والحد الأقصى 10 ملفات. أمثلة: تقرير المرور، تقارير طبية، مستندات العقد.'
-                  : 'Minimum 2 files and maximum 10 files. Examples: traffic report, medical reports, contract documents.'}
+                  ? 'الحد الأدنى مرفق واحد والحد الأقصى 10 مرفقات.'
+                  : 'Minimum 1 and maximum 10 attachments.'}
               </p>
             </div>
 

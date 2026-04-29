@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, lazy, Suspense } from 'react'
 import { Plus, FileUp, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
 import Button from '@/components/ui/Button'
@@ -32,6 +32,10 @@ type IssueClientForm = {
   nationalIdentityFile?: File
   nationalIdentityPath?: string
 }
+
+// Lazy load DataTable and Modal for performance
+const DataTable = lazy(() => import('@/components/admin/DataTable'));
+const Modal = lazy(() => import('@/components/admin/Modal'));
 
 export default function AdminCases() {
   const { isArabic } = useLanguage()
@@ -162,48 +166,43 @@ export default function AdminCases() {
   }
 
   const validate = (): boolean => {
-    const nextErrors: FormErrors = {}
-
+    const nextErrors: FormErrors = {};
+    // عنوان القضية مطلوب
     if (!titeleAr.trim()) {
-      nextErrors.titeleAr = 'عنوان القضية مطلوب'
+      nextErrors.titeleAr = 'عنوان القضية مطلوب';
+    } else if (titeleAr.trim().length < 3) {
+      nextErrors.titeleAr = 'العنوان يجب أن يكون 3 أحرف على الأقل';
     }
-
+    // المدعى عليه مطلوب
     if (!defendant.trim()) {
-      nextErrors.defendant = 'المدعي عليه مطلوب'
+      nextErrors.defendant = 'المدعي عليه مطلوب';
+    } else if (defendant.trim().length < 3) {
+      nextErrors.defendant = 'المدعي عليه يجب أن يكون 3 أحرف على الأقل';
     }
-
+    // نوع القضية مطلوب وصحيح
     if (!isValidGuid(issueTypeId)) {
-      nextErrors.issueTypeId = 'نوع القضية غير صالح'
+      nextErrors.issueTypeId = 'نوع القضية غير صالح';
     }
-
-    const hasAtLeastOneValidClient = issueClients.some(
+    // يجب وجود عميل واحد على الأقل مع هوية
+    const validClients = issueClients.filter(
       (client) =>
         client.name.trim().length > 0 &&
         client.nationalId.trim().length > 0 &&
         Number.isFinite(Number(client.nationalId.trim())) &&
         (Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0)
-    )
-
-    if (!hasAtLeastOneValidClient) {
-      nextErrors.issueClients = 'يجب إضافة عميل واحد على الأقل مع مسار الهوية الوطنية'
+    );
+    if (validClients.length === 0) {
+      nextErrors.issueClients = 'يجب إضافة عميل واحد على الأقل مع رقم وهوية وطنية.';
     }
-
-    const hasMissingIdentityPath = issueClients.some(
-      (client) =>
-        client.name.trim().length > 0 &&
-        client.nationalId.trim().length > 0 &&
-        Number.isFinite(Number(client.nationalId.trim())) &&
-        !client.nationalIdentityFile &&
-        (client.nationalIdentityPath || '').trim().length === 0
-    )
-
-    if (hasMissingIdentityPath) {
-      nextErrors.issueClients = 'ملف الهوية الوطنية مطلوب لكل عميل'
-    }
-
-    setErrors(nextErrors)
-    return Object.keys(nextErrors).length === 0
-  }
+    // تحقق من كل عميل أن رقم الهوية صحيح
+    issueClients.forEach((client, idx) => {
+      if (client.nationalId && (!/^[0-9]{10,}$/.test(client.nationalId.trim()))) {
+        nextErrors.issueClients = 'رقم الهوية الوطنية يجب أن يكون أرقام فقط (10 خانات أو أكثر).';
+      }
+    });
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -306,20 +305,23 @@ export default function AdminCases() {
 
       {isLoading && <div className="mb-4 text-gray-300 font-cairo text-sm">جاري تحميل القضايا...</div>}
 
-      <DataTable
-        columns={columns}
-        data={rows}
-        onView={(row) => navigate(`/admin/cases/${row.id}`)}
-        onEdit={(row) => {
-          const issue = getIssueByRow(row)
-          if (issue) handleOpenModal(issue)
-        }}
-        onDelete={handleDelete}
-        deleteTitleAr="حذف القضية"
-        deleteTitleEn="Delete Case"
-        getDeleteLabel={(row) => row.titleAr}
-      />
+      <Suspense fallback={<div className="text-gray-400 font-cairo">جاري تحميل الجدول...</div>}>
+        <DataTable
+          columns={columns}
+          data={rows}
+          onView={(row) => navigate(`/admin/cases/${row.id}`)}
+          onEdit={(row) => {
+            const issue = getIssueByRow(row)
+            if (issue) handleOpenModal(issue)
+          }}
+          onDelete={handleDelete}
+          deleteTitleAr="حذف القضية"
+          deleteTitleEn="Delete Case"
+          getDeleteLabel={(row) => row.titleAr}
+        />
+      </Suspense>
 
+      <Suspense fallback={<div className="text-gray-400 font-cairo">جاري تحميل النموذج...</div>}>
       <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Add Case" titleAr="إضافة/تعديل قضية">
         <form onSubmit={handleSubmit} className="space-y-6" dir="rtl">
           <div>
@@ -334,15 +336,7 @@ export default function AdminCases() {
             {errors.titeleAr && <p className="text-red-400 text-xs mt-2">{errors.titeleAr}</p>}
           </div>
 
-          <div>
-            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">العنوان الإنجليزي</label>
-            <input
-              type="text"
-              value={titeleEn}
-              onChange={(e) => setTiteleEn(e.target.value)}
-              className="w-full px-4 py-2 rounded border border-gold/30 bg-charcoal text-white font-cairo focus:border-gold outline-none transition-colors"
-            />
-          </div>
+          {/* تم إخفاء حقل العنوان الإنجليزي بناءً على طلب العميل */}
 
           <div className="grid md:grid-cols-2 gap-4">
             <div>
@@ -441,16 +435,19 @@ export default function AdminCases() {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <input
-                      type="file"
-                      required={!client.nationalIdentityPath}
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        updateClientField(index, 'nationalIdentityFile', file)
-                        updateClientField(index, 'nationalIdentityPath', file?.name)
-                      }}
-                      className="block w-full text-sm text-gray-300 font-cairo"
-                    />
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span className="text-xs text-gold font-cairo">رفع الهوية الوطنية</span>
+                      <input
+                        type="file"
+                        required={!client.nationalIdentityPath}
+                        onChange={(e) => {
+                          const file = e.target.files?.[0]
+                          updateClientField(index, 'nationalIdentityFile', file)
+                          updateClientField(index, 'nationalIdentityPath', file?.name)
+                        }}
+                        className="block w-full text-sm text-gray-300 font-cairo"
+                      />
+                    </label>
                     {issueClients.length > 1 && (
                       <button
                         type="button"
@@ -489,6 +486,7 @@ export default function AdminCases() {
           </div>
         </form>
       </Modal>
+      </Suspense>
     </div>
   )
 }
