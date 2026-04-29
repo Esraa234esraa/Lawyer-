@@ -7,13 +7,13 @@ import NewsCard from '@/components/ui/NewsCard'
 // import TestimonialCard from '@/components/ui/TestimonialCard'
 import { useLanguage } from '@/hooks/useLanguage'
 import {  statsData } from '@/data/mockData'
-import { useAdminStore } from '@/store/adminStore'
+// import { useAdminStore } from '@/store/adminStore'
 import { Link } from 'react-router-dom'
 import { useGetServices } from '@/hooks/services'
 import { useGetVisibleNews } from '@/hooks/news'
 export default function Home() {
   const { isArabic } = useLanguage()
-  const [_selectedService, setSelectedService] = useState<number | null>(null)
+  const [_selectedService, _setSelectedService] = useState<number | null>(null)
   // ✅ Services API
   const { data: servicesData, isLoading: servicesLoading } = useGetServices()
   const services = servicesData?.data || []
@@ -21,16 +21,16 @@ export default function Home() {
   // ✅ News API
   const { data: newsResponse, isLoading: newsLoading } = useGetVisibleNews()
   const newsList = newsResponse?.data || []
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.3,
-      },
-    },
-  }
+  // const containerVariants = {
+  //   hidden: { opacity: 0 },
+  //   visible: {
+  //     opacity: 1,
+  //     transition: {
+  //       staggerChildren: 0.1,
+  //       delayChildren: 0.3,
+  //     },
+  //   },
+  // }
    // ✅ fix image path
   const resolveImagePath = (filePath: string) => {
     if (!filePath) return ''
@@ -39,62 +39,62 @@ export default function Home() {
     return `https://lawm.runasp.net/${normalized}`
   }
 
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.8 },
-    },
-  }
+  // const itemVariants = {
+  //   hidden: { opacity: 0, y: 20 },
+  //   visible: {
+  //     opacity: 1,
+  //     y: 0,
+  //     transition: { duration: 0.8 },
+  //   },
+  // }
 
-  const headingTextAr = 'أهلاً بك في مكتبي القانوني'
-  const headingTextEn = 'Welcome to my law office'
-  const headingLetters = (isArabic ? headingTextAr : headingTextEn).split('')
+  // const headingTextAr = 'أهلاً بك في مكتبي القانوني'
+  // const headingTextEn = 'Welcome to my law office'
+  // const headingLetters = (isArabic ? headingTextAr : headingTextEn).split('')
 
-  const headingContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.04,
-        delayChildren: 0.2,
-      },
-    },
-  }
+  // const headingContainer = {
+  //   hidden: { opacity: 0 },
+  //   visible: {
+  //     opacity: 1,
+  //     transition: {
+  //       staggerChildren: 0.04,
+  //       delayChildren: 0.2,
+  //     },
+  //   },
+  // }
 
-  const headingLetter = {
-    hidden: { opacity: 0, y: 8 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.25 },
-    },
-  }
+  // const headingLetter = {
+  //   hidden: { opacity: 0, y: 8 },
+  //   visible: {
+  //     opacity: 1,
+  //     y: 0,
+  //     transition: { duration: 0.25 },
+  //   },
+  // }
 
   const nameTextAr = 'المحامية مريم بنت محمد'
   const nameTextEn = 'Lawyer Maryam bint Mohammed'
-  const nameLetters = (isArabic ? nameTextAr : nameTextEn).split('')
+  // const nameLetters = (isArabic ? nameTextAr : nameTextEn).split('')
 
-  const nameContainer = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.05,
-        delayChildren: 0.4,
-      },
-    },
-  }
+  // const nameContainer = {
+  //   hidden: { opacity: 0 },
+  //   visible: {
+  //     opacity: 1,
+  //     transition: {
+  //       staggerChildren: 0.05,
+  //       delayChildren: 0.4,
+  //     },
+  //   },
+  // }
 
-  const nameLetter = {
-    hidden: { opacity: 0, y: 10 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: { duration: 0.25 },
-    },
-  }
+  // const nameLetter = {
+  //   hidden: { opacity: 0, y: 10 },
+  //   visible: {
+  //     opacity: 1,
+  //     y: 0,
+  //     transition: { duration: 0.25 },
+  //   },
+  // }
 
   return (
     <div dir="rtl">
