@@ -72,8 +72,7 @@ export default function Home() {
   //   },
   // }
 
-  const nameTextAr = 'المحامية مريم بنت محمد'
-  const nameTextEn = 'Lawyer Maryam bint Mohammed'
+  
   // const nameLetters = (isArabic ? nameTextAr : nameTextEn).split('')
 
   // const nameContainer = {
