@@ -77,11 +77,7 @@ export default function Login() {
                 placeholder="admin@lawfirm.ar"
                 required
               />
-              <p className="text-xs text-gray-500 mt-2 font-cairo text-right">
-                {isArabic
-                  ? 'جرب: admin@lawfirm.ar أو client@lawfirm.ar'
-                  : 'Try: admin@lawfirm.ar or client@lawfirm.ar'}
-              </p>
+            
             </div>
 
             <div>
@@ -100,9 +96,7 @@ export default function Login() {
                   {isArabic ? 'نسيت كلمة المرور؟' : 'Forgot password?'}
                 </Link>
               </div>
-              <p className="text-xs text-gray-500 mt-2 font-cairo text-right">
-                {isArabic ? 'جرب: admin123 أو client123' : 'Try: admin123 or client123'}
-              </p>
+             
             </div>
 
             {(errors.root?.message || error) && (
@@ -121,7 +115,7 @@ export default function Login() {
             </Button>
           </form>
 
-          <p className="text-center text-gray-400 text-sm mt-6 font-cairo">
+          {/* <p className="text-center text-gray-400 text-sm mt-6 font-cairo">
             {isArabic ? 'بيانات الاختبار أعلاه' : 'Test credentials above'}
           </p>
 
@@ -130,7 +124,7 @@ export default function Login() {
             <Link to="/register" className="text-gold hover:text-gold-light transition-colors">
               {isArabic ? 'أنشئ حساب' : 'Create one'}
             </Link>
-          </p>
+          </p> */}
         </div>
       </motion.div>
     </div>
