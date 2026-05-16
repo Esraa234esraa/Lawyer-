@@ -376,37 +376,37 @@ export default function AdminCases() {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">مرفقات القضية</label>
-            <div className="mb-4">
-              <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-gold/30 rounded-lg hover:border-gold cursor-pointer transition-colors">
-                <div className="flex flex-col items-center justify-center pt-2 pb-2">
-                  <FileUp size={24} className="text-gold mb-2" />
-                  <p className="text-sm font-cairo text-gold">اضغط لرفع ملفات</p>
-                </div>
-                <input type="file" multiple onChange={handleAttachmentUpload} className="hidden" />
-              </label>
-            </div>
+        <div>
+          <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">مرفقات القضية</label>
+          <div className="mb-4">
+            <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-gold/30 rounded-lg hover:border-gold cursor-pointer transition-colors">
+              <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                <FileUp size={24} className="text-gold mb-2" />
+                <p className="text-sm font-cairo text-gold">اضغط لرفع ملفات</p>
+              </div>
+              <input type="file" multiple onChange={handleAttachmentUpload} className="hidden" />
+            </label>
+          </div>
 
-            {issueAttachmentFiles.length > 0 && (
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {issueAttachmentFiles.map((file, index) => (
-                  <div
-                    key={`${file.name}-${index}`}
-                    className="flex items-center justify-between p-3 bg-charcoal/50 rounded border border-gold/20"
-                  >
-                    <div className="flex-1">
-                      <p className="text-sm font-cairo text-white">{file.name}</p>
-                      <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(2)} KB</p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveAttachment(index)}
-                      className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                    >
-                      <Trash2 size={16} />
-                    </button>
+          {issueAttachmentFiles.length > 0 && (
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {issueAttachmentFiles.map((file, index) => (
+                <div
+                  key={`${file.name}-${index}`}
+                  className="flex items-center justify-between p-3 bg-charcoal/50 rounded border border-gold/20"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-cairo text-white">{file.name}</p>
+                    <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(2)} KB</p>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveAttachment(index)}
+                    className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
                 ))}
               </div>
             )}

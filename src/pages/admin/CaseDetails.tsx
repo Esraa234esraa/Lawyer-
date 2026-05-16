@@ -77,10 +77,10 @@ export default function AdminCaseDetails() {
           </span>
         </div>
 
-        <div>
+        {/* <div>
           <h2 className="text-gold mb-3 font-cairo">{isArabic ? 'العنوان الإنجليزي' : 'English Title'}</h2>
           <p className="text-gray-300 leading-relaxed font-cairo">{issue.titeleEn || '-'}</p>
-        </div>
+        </div> */}
 
         <div>
           <h2 className="text-gold mb-4 font-cairo">{isArabic ? 'عملاء القضية' : 'Issue Clients'}</h2>
@@ -99,7 +99,6 @@ export default function AdminCaseDetails() {
         </div>
 
         <div>
-          <h2 className="text-gold mb-4 font-cairo">{isArabic ? 'مرفقات القضية' : 'Case Attachments'}</h2>
           {attachments.length > 0 ? (
             <div className="space-y-3">
               {attachments.map((attachment, index) => {

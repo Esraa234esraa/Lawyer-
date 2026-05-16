@@ -16,6 +16,8 @@ import {
   ChevronRight,
   Menu,
    BarChart2,
+  Link2,
+  AlertTriangle,
   X,
 } from 'lucide-react'
 import { useLanguage } from '@/hooks/useLanguage'
@@ -23,6 +25,7 @@ import { useAuth } from '@/hooks/useAuth'
 import { useSwipe } from '@/hooks/useSwipe'
 import { useSidebarStore } from '@/store/useSidebarStore' // Zustand store
 import Logo from '@/components/ui/Logo'
+import Modal from '@/components/admin/Modal'
 
 export default function AdminSidebar() {
   const location = useLocation()
@@ -30,7 +33,11 @@ export default function AdminSidebar() {
   const { logout } = useAuth()
   const { collapsed, toggle } = useSidebarStore()
   const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [isLeaveModalOpen, setIsLeaveModalOpen] = useState(false)
   const [_isMobile, setIsMobile] = useState(window.innerWidth < 1024)
+  const dailyTasksDriveUrl =
+    (import.meta.env.VITE_DAILY_TASKS_DRIVE_URL as string | undefined)?.trim() ||
+    'https://docs.google.com/spreadsheets/d/1dFse8NJVmgrSyU_kK-_azZ2VA7ZlqJB5/edit?usp=drivesdk&ouid=104889679599200827234&rtpof=true&sd=true'
 
   const { handleTouchStart, handleTouchEnd } = useSwipe({
     onSwipeLeft: () => setIsMobileOpen(false),
@@ -53,6 +60,17 @@ useEffect(() => {
 
   return () => window.removeEventListener('popstate', handleRouteChange)
 }, [isMobileOpen])
+
+  const openDailyTasksWarning = () => {
+    setIsLeaveModalOpen(true)
+  }
+
+  const handleConfirmLeaveToDailyTasks = () => {
+    setIsLeaveModalOpen(false)
+    if (!dailyTasksDriveUrl) return
+    window.location.assign(dailyTasksDriveUrl)
+  }
+
   const menuItems = [
     // { labelAr: 'لوحة الإحصائيات', labelEn: 'Dashboard', href: '/admin/dashboard', icon: BarChart3 },
     { labelAr: 'إدارة الخدمات', labelEn: 'Services', href: '/admin/services', icon: Settings },
@@ -135,6 +153,18 @@ useEffect(() => {
                 </Link>
               )
             })}
+
+            <motion.button
+              whileHover={{ x: collapsed ? 0 : 4 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={openDailyTasksWarning}
+              className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-cairo text-gray-400 hover:text-gold hover:bg-gold/10"
+              title={collapsed ? (isArabic ? 'المهام اليومية' : 'Daily Tasks') : ''}
+            >
+              {!collapsed && <span className="font-medium text-sm truncate">{isArabic ? 'المهام اليومية' : 'Daily Tasks'}</span>}
+              <Link2 size={20} className="ms-auto" />
+            </motion.button>
           </div>
 
           <div className="my-4 border-t border-gold/20" />
@@ -242,6 +272,20 @@ useEffect(() => {
                       </motion.div>
                     )
                   })}
+
+                  <motion.button
+                    whileHover={{ scale: 1.02, x: -4 }}
+                    whileTap={{ scale: 0.98 }}
+                    type="button"
+                    onClick={() => {
+                      setIsMobileOpen(false)
+                      openDailyTasksWarning()
+                    }}
+                    className="w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all font-cairo flex-row-reverse text-gray-400 hover:text-gold hover:bg-gold/10"
+                  >
+                    <Link2 size={20} />
+                    <span className="font-medium">{isArabic ? 'المهام اليومية' : 'Daily Tasks'}</span>
+                  </motion.button>
                 </div>
 
                 <motion.button
@@ -261,6 +305,49 @@ useEffect(() => {
           </>
         )}
       </AnimatePresence>
+
+      <Modal
+        isOpen={isLeaveModalOpen}
+        onClose={() => setIsLeaveModalOpen(false)}
+        title="Leave Website"
+        titleAr="مغادرة الموقع"
+      >
+        <div className="space-y-5 text-right" dir="rtl">
+          <div className="flex items-start gap-3 flex-row-reverse p-4 rounded-lg bg-amber-500/10 border border-amber-500/30">
+            <AlertTriangle size={20} className="text-amber-400 mt-0.5" />
+            <div>
+              <p className="text-white font-cairo font-semibold">
+                {isArabic ? 'سيتم تحويلك إلى رابط خارجي (Google Drive).' : 'You will be redirected to an external link (Google Drive).'}
+              </p>
+              <p className="text-gray-300 text-sm font-cairo mt-1">
+                {isArabic ? 'بالضغط على متابعة، ستغادر لوحة التحكم الحالية.' : 'By continuing, you will leave the current dashboard.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 justify-end">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={() => setIsLeaveModalOpen(false)}
+              className="px-4 py-2 rounded-lg border border-gold/20 text-gray-200 font-cairo"
+            >
+              {isArabic ? 'إلغاء' : 'Cancel'}
+            </motion.button>
+
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              type="button"
+              onClick={handleConfirmLeaveToDailyTasks}
+              className="px-4 py-2 rounded-lg bg-gradient-to-r from-gold to-gold-light text-primary-black font-cairo font-semibold"
+            >
+              {isArabic ? 'متابعة' : 'Continue'}
+            </motion.button>
+          </div>
+        </div>
+      </Modal>
     </>
   )
 }
