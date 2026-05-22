@@ -73,7 +73,9 @@ export default function AppRoutes() {
           <Route path="/book-consultation" element={<ConsultationBookingForm />} />
           <Route path="/payment" element={<PaymentPage />} />
           <Route path="/internships" element={<Internships />} />
+          <Route path="/internships/:id" element={<Internships />} />
           <Route path="/jobs" element={<Jobs />} />
+          <Route path="/jobs/:id" element={<Jobs />} />
           <Route path="/faq" element={<FAQ />} />
         </Route>
 

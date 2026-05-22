@@ -74,6 +74,7 @@ export default function AdminCaseDetails() {
         </div>
       )} */}
 
+
       <div className="bg-charcoal border border-gold/20 rounded-xl p-8 space-y-6">
         <div className="flex flex-wrap gap-4">
           <span className="border border-gold/30 text-gold px-4 py-2 rounded-full text-sm">{issueTypeName}</span>

@@ -33,6 +33,16 @@ type IssueClientForm = {
   nationalIdentityPath?: string
 }
 
+const ALLOWED_IDENTITY_MIME_TYPES = new Set(['image/jpeg', 'image/png'])
+const ALLOWED_IDENTITY_EXTENSIONS = ['jpg', 'jpeg', 'png']
+
+const isAllowedIdentityImage = (file: File): boolean => {
+  if (ALLOWED_IDENTITY_MIME_TYPES.has(file.type)) return true
+
+  const fileExtension = file.name.split('.').pop()?.toLowerCase()
+  return Boolean(fileExtension && ALLOWED_IDENTITY_EXTENSIONS.includes(fileExtension))
+}
+
 export default function AdminCases() {
   const { isArabic } = useLanguage()
   const navigate = useNavigate()
@@ -199,6 +209,14 @@ export default function AdminCases() {
 
     if (hasMissingIdentityPath) {
       nextErrors.issueClients = 'ملف الهوية الوطنية مطلوب لكل عميل'
+    }
+
+    const hasInvalidIdentityImage = issueClients.some(
+      (client) => client.nationalIdentityFile && !isAllowedIdentityImage(client.nationalIdentityFile)
+    )
+
+    if (hasInvalidIdentityImage) {
+      nextErrors.issueClients = 'الهوية الوطنية يجب أن تكون صورة بصيغة jpg أو jpeg أو png'
     }
 
     setErrors(nextErrors)
@@ -444,8 +462,19 @@ export default function AdminCases() {
                     <input
                       type="file"
                       required={!client.nationalIdentityPath}
+                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
                       onChange={(e) => {
                         const file = e.target.files?.[0]
+                        if (file && !isAllowedIdentityImage(file)) {
+                          setErrors((prev) => ({
+                            ...prev,
+                            issueClients: 'الهوية الوطنية يجب أن تكون صورة بصيغة jpg أو jpeg أو png',
+                          }))
+                          e.target.value = ''
+                          updateClientField(index, 'nationalIdentityFile', undefined)
+                          return
+                        }
+
                         updateClientField(index, 'nationalIdentityFile', file)
                         updateClientField(index, 'nationalIdentityPath', file?.name)
                       }}
@@ -462,6 +491,7 @@ export default function AdminCases() {
                     )}
                   </div>
 
+                  <p className="text-xs text-gray-400">إرفاق الهوية الوطنية بصيغة jpg أو jpeg أو png</p>
                   {client.nationalIdentityPath && <p className="text-xs text-gray-400">ملف الهوية الحالي موجود</p>}
                 </div>
               ))}
