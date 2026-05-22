@@ -5,6 +5,7 @@ import NewsCard from '@/components/ui/NewsCard'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useGetVisibleNews } from '@/hooks/news'
 import { ArrowRight } from 'lucide-react'
+import Loading from '@/components/ui/Loading'
 
 export default function News() {
   const { isArabic } = useLanguage()
@@ -197,8 +198,8 @@ export default function News() {
 
       {(isLoading || isFetching) && (
         <section className="py-4 bg-charcoal">
-          <div className="container-max text-gray-400 font-cairo text-right text-sm">
-            {isArabic ? 'جاري تحميل الأخبار...' : 'Loading news...'}
+          <div className="container-max">
+            <Loading inline message={isArabic ? 'جاري تحميل الأخبار...' : 'Loading news...'} />
           </div>
         </section>
       )}

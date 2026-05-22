@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { ArrowRight, MapPin, DollarSign, Briefcase } from 'lucide-react'
+import Loading from '@/components/ui/Loading'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useGetAllOffers, useGetOfferById } from '@/hooks/offers'
@@ -42,10 +43,12 @@ export default function Jobs() {
         {/* Breadcrumb */}
         <div className="bg-charcoal border-b border-gold/20">
           <div className="container-max py-3 md:py-4 px-4 md:px-0">
-            <Link to="/jobs" className="text-gold hover:text-gold-light font-cairo flex items-center gap-2 justify-end text-sm md:text-base">
-              <ArrowRight size={18} />
-              {isArabic ? 'العودة للوظائف' : 'Back to Jobs'}
-            </Link>
+            <div className="flex justify-start ms-6">
+              <Link to="/jobs" className="text-gold hover:text-gold-light font-cairo flex items-center gap-2 text-sm md:text-base">
+                <ArrowRight size={18} />
+                {isArabic ? 'العودة للوظائف' : 'Back to Jobs'}
+              </Link>
+            </div>
           </div>
         </div>
 
@@ -173,8 +176,8 @@ export default function Jobs() {
       <section className="section-padding bg-charcoal">
         <div className="container-max px-4 md:px-0">
           {(isLoading || isFetching || isJobLoading || isJobFetching) && (
-            <div className="mb-4 text-gray-300 font-cairo text-sm text-right">
-              {isArabic ? 'جاري تحميل الوظائف...' : 'Loading jobs...'}
+            <div className="mb-4">
+              <Loading inline message={isArabic ? 'جاري تحميل الوظائف...' : 'Loading jobs...'} />
             </div>
           )}
 

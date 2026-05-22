@@ -3,6 +3,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { motion } from 'framer-motion'
 import { useMemo } from 'react'
 import { useGetIssueById, useGetIssueTypes } from '@/hooks/issues'
+import Loading from '@/components/ui/Loading'
 
 const resolveAttachmentPath = (filePath: string | undefined) => {
   if (!filePath) return ''
@@ -47,9 +48,7 @@ export default function CaseDetails() {
     document.body.removeChild(link)
   }
 
-  if (isLoading) {
-    return <div className="text-gray-300 font-cairo">{isArabic ? 'جاري تحميل بيانات القضية...' : 'Loading case details...'}</div>
-  }
+  if (isLoading) return <Loading message={isArabic ? 'جاري تحميل بيانات القضية...' : 'Loading case details...'} />
 
   if (!issue) {
     return (

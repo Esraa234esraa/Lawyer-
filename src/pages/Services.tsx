@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { useParams, Link } from 'react-router-dom'
+import Loading from '@/components/ui/Loading'
 import ServiceCard from '@/components/ui/ServiceCard'
 import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
@@ -31,13 +32,7 @@ export default function Services() {
   const service =
     id ? services.find((s) => String(s.id) === String(id)) : undefined
 
-  if (isLoading) {
-    return (
-      <div className="pt-24 text-center text-gray-300 font-cairo">
-        {isArabic ? 'جاري تحميل الخدمات...' : 'Loading services...'}
-      </div>
-    )
-  }
+  if (isLoading) return <Loading message={isArabic ? 'جاري تحميل الخدمات...' : 'Loading services...'} />
 
   if (isError) {
     return (

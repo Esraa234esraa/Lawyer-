@@ -10,6 +10,7 @@ import {  statsData } from '@/data/mockData'
 // import { useAdminStore } from '@/store/adminStore'
 import { Link } from 'react-router-dom'
 import { useGetServices } from '@/hooks/services'
+import Loading from '@/components/ui/Loading'
 import { useGetVisibleNews } from '@/hooks/news'
 export default function Home() {
   const { isArabic } = useLanguage()
@@ -226,9 +227,9 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-6">
             {servicesLoading ? (
-              <p className="text-center text-gray-400 col-span-3">
-                جاري تحميل الخدمات...
-              </p>
+              <div className="col-span-3">
+                <Loading inline message={isArabic ? 'جاري تحميل الخدمات...' : 'Loading services...'} />
+              </div>
             ) : (
               services.slice(0, 6).map((service) => (
                 <motion.div key={service.id}>
@@ -447,9 +448,9 @@ export default function Home() {
 
           <div className="grid md:grid-cols-3 gap-6">
             {newsLoading ? (
-              <p className="text-center text-gray-400 col-span-3">
-                جاري تحميل الأخبار...
-              </p>
+              <div className="col-span-3">
+                <Loading inline message={isArabic ? 'جاري تحميل الأخبار...' : 'Loading news...'} />
+              </div>
             ) : (
               newsList.slice(0, 3).map((news) => (
                 <motion.div key={news.id}>

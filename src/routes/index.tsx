@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react'
+import Loading from '@/components/ui/Loading'
 import { Routes, Route, Navigate } from 'react-router-dom'
 import PublicLayout from '@/layouts/PublicLayout'
 import AdminLayout from '@/layouts/AdminLayout'
@@ -56,7 +57,7 @@ const PaymentPage = lazyImport(() => import('@/components/client/PaymentPage'))
 
 export default function AppRoutes() {
   return (
-    <Suspense fallback={<div className="text-gray-300 font-cairo p-6" dir="rtl">جاري التحميل...</div>}>
+    <Suspense fallback={<Loading />}>
       <Routes>
 
         {/* Public */}
