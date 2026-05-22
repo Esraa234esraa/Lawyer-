@@ -52,7 +52,7 @@ export default function AdminCaseDetails() {
 
   const attachments = issue.attachments || []
   const clients = issue.clients || []
-  const previewImage = resolveAttachmentPath(attachments[0]?.filePath)
+  // const previewImage = resolveAttachmentPath(attachments[0]?.filePath)
 
   return (
     <motion.div
