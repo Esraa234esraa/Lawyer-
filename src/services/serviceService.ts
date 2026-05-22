@@ -48,7 +48,7 @@ export const getAllServices = async (): Promise<ApiResponse<Service[]>> => {
       `${BASE_URL}/GetAllServiceAsync`
     )
 
-    return assertSuccess(res.data)
+    return res.data
   } catch (error) {
     throw new Error(getApiErrorMessage(error))
   }

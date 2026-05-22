@@ -9,6 +9,7 @@ interface ServiceCardProps {
   descriptionAr: string
   descriptionEn: string
   icon: string
+  imageUrl?: string
   features?: string[]
   onClick?: () => void
 }
@@ -21,6 +22,7 @@ export default function ServiceCard({
   priceAr,
   priceEn,
   icon,
+  imageUrl,
   features,
   onClick,
 }: ServiceCardProps) {
@@ -33,6 +35,11 @@ export default function ServiceCard({
       onClick={onClick}
       dir="rtl"
     >
+      {imageUrl ? (
+        <div className="mb-5 overflow-hidden rounded-xl border border-gold/15 bg-primary-black">
+          <img src={imageUrl} alt={isArabic ? titleAr : titleEn} className="h-44 w-full object-cover transition-transform duration-300 group-hover:scale-105" />
+        </div>
+      ) : null}
       <div className="text-5xl mb-4 flex justify-end">{icon}</div>
       <h3 className="text-heading-3 font-cairo mb-3 group-hover:text-gold transition-colors">
         {isArabic ? titleAr : titleEn}

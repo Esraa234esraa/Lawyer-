@@ -34,8 +34,9 @@ export default function Home() {
    // ✅ fix image path
   const resolveImagePath = (filePath: string) => {
     if (!filePath) return ''
-    if (filePath.startsWith('http')) return filePath
-    const normalized = filePath.replace(/^\/?wwwroot\/?/i, '')
+    const trimmedPath = filePath.trim()
+    if (trimmedPath.startsWith('http')) return trimmedPath
+    const normalized = trimmedPath.replace(/^\/?wwwroot\/?/i, '').replace(/^\/+/, '')
     return `https://lawm.runasp.net/${normalized}`
   }
 
@@ -240,6 +241,7 @@ export default function Home() {
                       priceAr={service.price ? `${service.price} ر.س` : ''}
                       priceEn={service.price ? `${service.price} SAR` : ''}
                       icon={''}
+                      imageUrl={resolveImagePath(service.serviceImagePath || '')}
                       features={(service.childernTheServices || []).map(c => c.term)}
                     />
                   </Link>

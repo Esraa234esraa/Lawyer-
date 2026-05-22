@@ -6,8 +6,13 @@ import { useLanguage } from '@/hooks/useLanguage'
 
 const resolveAttachmentPath = (filePath: string | undefined) => {
   if (!filePath) return ''
-  if (filePath.startsWith('http')) return filePath
-  const normalized = filePath.replace(/^\/?wwwroot\/?/i, '')
+  const trimmedPath = filePath.trim()
+  const embeddedUrl = trimmedPath.match(/https?:\/\/[^\s"'<>]+/i)?.[0]
+
+  if (embeddedUrl) return embeddedUrl
+  if (trimmedPath.startsWith('http')) return trimmedPath
+
+  const normalized = trimmedPath.replace(/^\/?wwwroot\/?/i, '').replace(/^\/+/, '')
   return `https://lawm.runasp.net/${normalized}`
 }
 
@@ -54,7 +59,7 @@ export default function AdminCaseDetails() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      dir="rtl"
+      dir={isArabic ? 'rtl' : 'ltr'}
       className="space-y-8"
     >
       <button onClick={() => navigate('/admin/cases')} className="text-gold hover:underline font-cairo">
@@ -90,6 +95,16 @@ export default function AdminCaseDetails() {
                 <div key={`${client.nationalId}-${index}`} className="rounded-lg border border-gold/20 p-4 bg-black/20">
                   <p className="text-white text-sm">{client.name}</p>
                   <p className="text-gray-400 text-xs">{client.nationalId}</p>
+                  {client.nationalIdentityPath && (
+                    <a
+                      href={resolveAttachmentPath(client.nationalIdentityPath)}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2 inline-flex text-gold text-xs hover:underline"
+                    >
+                      {isArabic ? 'عرض بطاقة الهوية' : 'View Identity Card'}
+                    </a>
+                  )}
                 </div>
               ))}
             </div>

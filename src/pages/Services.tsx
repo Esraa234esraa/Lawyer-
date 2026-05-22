@@ -17,10 +17,12 @@ export default function Services() {
   // ================= IMAGE HELPER =================
   const resolveImagePath = (filePath?: string | null) => {
     if (!filePath) return ''
-    if (filePath.startsWith('http')) return filePath
+    const trimmedPath = filePath.trim()
+    if (trimmedPath.startsWith('http')) return trimmedPath
 
-    const normalized = filePath
+    const normalized = trimmedPath
       .replace(/^\/?wwwroot\/?/i, '')
+      .replace(/^\/+/, '')
       .replace(/\\/g, '/')
 
     return `https://lawm.runasp.net/${normalized}`
@@ -183,6 +185,7 @@ export default function Services() {
                     priceAr={service.price ? `${service.price} ر.س` : ''}
                     priceEn={service.price ? `${service.price} SAR` : ''}
                     icon={''}
+                    imageUrl={resolveImagePath(service.serviceImagePath)}
                     features={(service.childernTheServices || []).map(
                       (c: ServiceChild) => c.term
                     )}

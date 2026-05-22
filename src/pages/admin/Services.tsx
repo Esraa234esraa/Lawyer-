@@ -19,13 +19,12 @@ import type { Service } from '@/types/service'
 
 export default function AdminServices() {
   // ================= API =================
-  const { data, isLoading, isError } = useGetServices()
+  const { data, isLoading, isError, error } = useGetServices()
   const createMutation = useCreateService()
   const updateMutation = useUpdateService()
   const deleteMutation = useDeleteService()
 
   const services: Service[] = data?.data || []
-console.log(services);
 
   // ================= DETAILS API =================
   const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null)
@@ -51,9 +50,10 @@ console.log(services);
 
   const resolveImagePath = (filePath?: string) => {
     if (!filePath) return ''
-    if (filePath.startsWith('http')) return filePath
+    const trimmedPath = filePath.trim()
+    if (trimmedPath.startsWith('http')) return trimmedPath
 
-    const normalized = filePath.replace(/^\/?wwwroot\/?/i, '')
+    const normalized = trimmedPath.replace(/^\/?wwwroot\/?/i, '')
     return `https://lawm.runasp.net/${normalized.replace(/\\/g, '/')}`
   }
 
@@ -133,12 +133,10 @@ console.log(services);
     },
   ]
 
-  // ================= UI =================
-  if (isLoading)
-    return <div className="text-white p-10">جاري التحميل...</div>
-
-  if (isError)
-    return <div className="text-red-400 p-10">حدث خطأ في تحميل البيانات</div>
+  const backendMessage = !isLoading && data?.success === false ? data.message : ''
+  const errorMessage = error instanceof Error ? error.message : 'حدث خطأ في تحميل البيانات'
+  const tableMessage = isLoading ? 'جاري تحميل الخدمات...' : backendMessage || (isError ? errorMessage : services.length === 0 ? 'لا توجد خدمات حالياً' : '')
+  const tableColSpan = columns.length + 1
 
   return (
     <div dir="rtl">
@@ -154,16 +152,47 @@ console.log(services);
       </motion.div>
 
       {/* TABLE */}
-      <DataTable
-        data={services}
-        columns={columns}
-        onEdit={handleOpenModal}
-        onDelete={handleDelete}
-        onView={handleOpenDetails}
-        deleteTitleAr="حذف الخدمة"
-        deleteTitleEn="Delete Service"
-        getDeleteLabel={(service) => service.title}
-      />
+      <div className="border border-gold/20 rounded-lg overflow-hidden max-w-full bg-charcoal/40">
+        {tableMessage ? (
+          <div className="w-full overflow-x-auto">
+            <table className="min-w-full text-right">
+              <thead className="bg-primary-black border-b border-gold/20">
+                <tr>
+                  {columns.map((column) => (
+                    <th
+                      key={String(column.key)}
+                      className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap"
+                    >
+                      {column.labelAr}
+                    </th>
+                  ))}
+                  <th className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap">
+                    الإجراءات
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan={tableColSpan} className="px-6 py-16 text-center text-gray-300 font-cairo">
+                    {tableMessage}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : (
+          <DataTable
+            data={services}
+            columns={columns}
+            onEdit={handleOpenModal}
+            onDelete={handleDelete}
+            onView={handleOpenDetails}
+            deleteTitleAr="حذف الخدمة"
+            deleteTitleEn="Delete Service"
+            getDeleteLabel={(service) => service.title}
+          />
+        )}
+      </div>
 
       {/* FORM MODAL */}
       <Modal
