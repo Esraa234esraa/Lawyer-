@@ -68,11 +68,11 @@ export default function AdminCaseDetails() {
 
       <h1 className="text-heading-1 text-gold font-cairo">{issue.titeleAr}</h1>
 
-      {previewImage && (
+      {/* {previewImage && (
         <div className="rounded-xl overflow-hidden border border-gold/20">
           <img src={previewImage} alt={issue.titeleAr} className="w-full h-72 object-cover" />
         </div>
-      )}
+      )} */}
 
       <div className="bg-charcoal border border-gold/20 rounded-xl p-8 space-y-6">
         <div className="flex flex-wrap gap-4">
