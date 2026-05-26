@@ -168,16 +168,12 @@ export default function AdminNews() {
         </Button>
       </motion.div>
 
-      {isLoading && (
-        <div className="mb-4 text-gray-300 font-cairo text-sm">
-          {isArabic ? 'جاري تحميل الأخبار...' : 'Loading news...'}
-        </div>
-      )}
-
       {/* Table */}
       <DataTable
         columns={columns}
         data={news}
+        isLoading={isLoading || isFetching}
+        loadingMessage={isArabic ? 'جاري تحميل الأخبار...' : 'Loading news...'}
         onEdit={handleOpenModal}
         onDelete={handleDelete}
         deleteTitleAr="حذف الخبر"

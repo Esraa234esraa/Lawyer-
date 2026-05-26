@@ -32,8 +32,6 @@ export default function Services() {
   const service =
     id ? services.find((s) => String(s.id) === String(id)) : undefined
 
-  if (isLoading) return <Loading message={isArabic ? 'جاري تحميل الخدمات...' : 'Loading services...'} />
-
   if (isError) {
     return (
       <div className="pt-24 text-center text-red-400 font-cairo">
@@ -162,34 +160,40 @@ export default function Services() {
 
       <section className="section-padding bg-primary-black">
         <div className="container-max">
-          <div className="grid md:grid-cols-3 gap-6">
+          {isLoading ? (
+            <div className="py-16 flex justify-center">
+              <Loading inline message={isArabic ? 'جاري تحميل الخدمات...' : 'Loading services...'} />
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-3 gap-6">
 
-            {services.map((service: BackendService) => (
-              <motion.div
-                key={service.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8 }}
-              >
-                <Link to={`/services/${service.id}`}>
-                  <ServiceCard
-                    titleAr={service.title}
-                    titleEn={service.title}
-                    descriptionAr={service.description}
-                    descriptionEn={service.description}
-                    priceAr={service.price ? `${service.price} ر.س` : ''}
-                    priceEn={service.price ? `${service.price} SAR` : ''}
-                    icon={''}
-                    imageUrl={resolveImagePath(service.serviceImagePath)}
-                    features={(service.childernTheServices || []).map(
-                      (c: ServiceChild) => c.term
-                    )}
-                  />
-                </Link>
-              </motion.div>
-            ))}
+              {services.map((service: BackendService) => (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.8 }}
+                >
+                  <Link to={`/services/${service.id}`}>
+                    <ServiceCard
+                      titleAr={service.title}
+                      titleEn={service.title}
+                      descriptionAr={service.description}
+                      descriptionEn={service.description}
+                      priceAr={service.price ? `${service.price} ر.س` : ''}
+                      priceEn={service.price ? `${service.price} SAR` : ''}
+                      icon={''}
+                      imageUrl={resolveImagePath(service.serviceImagePath)}
+                      features={(service.childernTheServices || []).map(
+                        (c: ServiceChild) => c.term
+                      )}
+                    />
+                  </Link>
+                </motion.div>
+              ))}
 
-          </div>
+            </div>
+          )}
         </div>
       </section>
     </div>

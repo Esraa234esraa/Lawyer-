@@ -291,15 +291,11 @@ export default function AdminInternships() {
         />
       </div>
 
-      {(isLoading || isFetching) && (
-        <div className="mb-4 text-gray-300 font-cairo text-sm text-right">
-          {isArabic ? 'جاري تحميل الطلبات...' : 'Loading applications...'}
-        </div>
-      )}
-
       <DataTable
         columns={columns}
         data={rows}
+        isLoading={isLoading || isFetching}
+        loadingMessage={isArabic ? 'جاري تحميل الطلبات...' : 'Loading applications...'}
         onView={(row) => navigate(`/admin/internships/${row.id}`)}
         onDelete={handleDelete}
         deleteTitleAr="حذف الطلب"

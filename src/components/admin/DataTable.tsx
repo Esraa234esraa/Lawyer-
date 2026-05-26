@@ -3,6 +3,7 @@ import { useState } from 'react'
 import { Trash2, Edit2, Eye } from 'lucide-react'
 import { useLanguage } from '@/hooks/useLanguage'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
+import Loading from '@/components/ui/Loading'
 
 export interface Column<T> {
   key: keyof T
@@ -14,6 +15,8 @@ export interface Column<T> {
 interface DataTableProps<T> {
   columns: Column<T>[]
   data: T[]
+  isLoading?: boolean
+  loadingMessage?: string
   onEdit?: (item: T) => void
   onDelete?: (item: T) => void
   onView?: (item: T) => void
@@ -27,6 +30,8 @@ interface DataTableProps<T> {
 export default function DataTable<T extends { id: number | string }>({
   columns,
   data,
+  isLoading = false,
+  loadingMessage,
   onEdit,
   onDelete,
   onView,
@@ -96,7 +101,16 @@ export default function DataTable<T extends { id: number | string }>({
             </tr>
           </thead>
           <tbody>
-            {data.length === 0 ? (
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan={columns.length + (actions ? 1 : 0)}
+                  className="px-6 py-10 text-center text-gray-300 font-cairo"
+                >
+                  <Loading inline message={loadingMessage} />
+                </td>
+              </tr>
+            ) : data.length === 0 ? (
               <tr>
                 <td
                   colSpan={columns.length + (actions ? 1 : 0)}

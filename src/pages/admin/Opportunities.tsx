@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
 import { Plus, Edit2, Trash2, Eye } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import Loading from '@/components/ui/Loading'
 import Modal from '@/components/admin/Modal'
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal'
 import { useLanguage } from '@/hooks/useLanguage'
@@ -260,8 +261,8 @@ export default function AdminOpportunities() {
       </div>
 
       {isLoading && (
-        <div className="mb-4 text-gray-300 font-cairo text-sm text-right">
-          {isArabic ? 'جاري تحميل العروض...' : 'Loading offers...'}
+        <div className="mb-4 flex justify-end">
+          <Loading inline message={isArabic ? 'جاري تحميل العروض...' : 'Loading offers...'} />
         </div>
       )}
 
@@ -340,9 +341,9 @@ export default function AdminOpportunities() {
       >
         <div className="space-y-4 text-right" dir="rtl">
           {(isDetailsLoading || isDetailsFetching) && (
-            <p className="text-gray-300 font-cairo text-sm">
-              {isArabic ? 'جاري تحميل التفاصيل...' : 'Loading details...'}
-            </p>
+            <div className="flex justify-end">
+              <Loading inline message={isArabic ? 'جاري تحميل التفاصيل...' : 'Loading details...'} />
+            </div>
           )}
 
           {!isDetailsLoading && !isDetailsFetching && detailsItem && (

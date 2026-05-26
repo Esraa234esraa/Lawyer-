@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { useEffect, useState } from 'react'
 import Button from '@/components/ui/Button'
+import Loading from '@/components/ui/Loading'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useGetWhoAreWe, useUpdateWhoAreWe } from '@/hooks/whoAreWe'
 import { toast } from 'sonner'
@@ -86,8 +87,8 @@ export default function AdminAbout() {
       </motion.div>
 
       {isLoading && (
-        <div className="mb-4 text-gray-300 font-cairo text-sm">
-          {isArabic ? 'جاري تحميل بيانات من نحن...' : 'Loading who are we data...'}
+        <div className="mb-4 flex justify-end">
+          <Loading inline message={isArabic ? 'جاري تحميل بيانات من نحن...' : 'Loading who are we data...'} />
         </div>
       )}
 

@@ -3,6 +3,7 @@ import { motion } from 'framer-motion'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useGetWhoAreWe } from '@/hooks/whoAreWe'
 import { aboutData } from '@/data/mockData'
+import Loading from '@/components/ui/Loading'
 
 export default function About() {
   const { isArabic } = useLanguage()
@@ -53,13 +54,9 @@ export default function About() {
               <h2 className="text-heading-2 font-cairo font-bold mb-4 text-gold">
                 {isArabic ? 'رؤيتنا' : 'Our Vision'}
               </h2>
-              <p className="text-gray-300 font-cairo text-lg">
-                {isLoading
-                  ? isArabic
-                    ? 'جاري تحميل البيانات...'
-                    : 'Loading data...'
-                  : visionContent}
-              </p>
+              <div className="text-gray-300 font-cairo text-lg min-h-[3rem] flex items-center justify-end">
+                {isLoading ? <Loading inline message={isArabic ? 'جاري تحميل البيانات...' : 'Loading data...'} /> : visionContent}
+              </div>
             </motion.div>
 
             {/* Mission */}
@@ -72,13 +69,9 @@ export default function About() {
               <h2 className="text-heading-2 font-cairo font-bold mb-4 text-gold">
                 {isArabic ? 'رسالتنا' : 'Our Mission'}
               </h2>
-              <p className="text-gray-300 font-cairo text-lg">
-                {isLoading
-                  ? isArabic
-                    ? 'جاري تحميل البيانات...'
-                    : 'Loading data...'
-                  : messageContent}
-              </p>
+              <div className="text-gray-300 font-cairo text-lg min-h-[3rem] flex items-center justify-end">
+                {isLoading ? <Loading inline message={isArabic ? 'جاري تحميل البيانات...' : 'Loading data...'} /> : messageContent}
+              </div>
             </motion.div>
           </div>
         </div>

@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowRight, ExternalLink } from 'lucide-react'
+import Loading from '@/components/ui/Loading'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useGetApplicationById } from '@/hooks/applications'
 
@@ -61,8 +62,8 @@ export default function ApplicationDetails() {
 
   if (isLoading || isFetching) {
     return (
-      <div className="text-center text-gray-300 font-cairo py-16">
-        {isArabic ? 'جاري تحميل تفاصيل الطلب...' : 'Loading application details...'}
+      <div className="py-16 flex justify-center">
+        <Loading inline message={isArabic ? 'جاري تحميل تفاصيل الطلب...' : 'Loading application details...'} />
       </div>
     )
   }

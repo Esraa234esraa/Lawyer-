@@ -5,12 +5,23 @@ import Header from '@/components/shared/Header'
 import AdminSidebar from '@/components/shared/AdminSidebar'
 import PageTransition from '@/components/ui/PageTransition'
 import { useSidebarStore } from '@/store/useSidebarStore'
+import { useQueryClient } from '@tanstack/react-query'
+import { getAllSessions } from '@/services/sessions.service'
+import { SESSION_QUERY_KEYS } from '@/constants/sessions'
 
 export default function AdminLayout() {
   const { collapsed } = useSidebarStore()
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 1024)
+  const queryClient = useQueryClient()
 
   useEffect(() => {
+    // Prefetch sessions to warm cache for faster admin list load
+    void queryClient.prefetchQuery({
+      queryKey: SESSION_QUERY_KEYS.list(),
+      queryFn: () => getAllSessions(),
+      staleTime: 10 * 60 * 1000,
+    })
+
     const handleResize = () => setIsDesktop(window.innerWidth >= 1024)
 
     handleResize()

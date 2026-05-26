@@ -82,13 +82,13 @@ export default function AdminMessages() {
         )}
       </motion.div>
 
-      {isLoading && (
-        <div className="mb-4 text-gray-300 font-cairo text-sm">
-          {isArabic ? 'جاري تحميل الرسائل...' : 'Loading messages...'}
-        </div>
-      )}
-
-      <DataTable columns={columns} data={rows} actions={false} />
+      <DataTable
+        columns={columns}
+        data={rows}
+        actions={false}
+        isLoading={isLoading || isFetching}
+        loadingMessage={isArabic ? 'جاري تحميل الرسائل...' : 'Loading messages...'}
+      />
     </div>
   )
 }

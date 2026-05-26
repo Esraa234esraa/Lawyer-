@@ -35,6 +35,20 @@ export default function Jobs() {
     ? jobByIdResponse?.data || activeJobs.find((item) => item.id === id) || null
     : null
 
+  if (id && (isLoading || isFetching || isJobLoading || isJobFetching)) {
+    return (
+      <div dir="rtl" className="pt-20 md:pt-24 pb-16">
+        <section className="section-padding bg-charcoal">
+          <div className="container-max px-4 md:px-0">
+            <div className="py-16 flex justify-center">
+              <Loading inline message={isArabic ? 'جاري تحميل الوظيفة...' : 'Loading job...'} />
+            </div>
+          </div>
+        </section>
+      </div>
+    )
+  }
+
   if (id && job) {
     const requirements = parseRequirements(job.requirements)
 
@@ -175,12 +189,6 @@ export default function Jobs() {
       {/* Jobs List */}
       <section className="section-padding bg-charcoal">
         <div className="container-max px-4 md:px-0">
-          {(isLoading || isFetching || isJobLoading || isJobFetching) && (
-            <div className="mb-4">
-              <Loading inline message={isArabic ? 'جاري تحميل الوظائف...' : 'Loading jobs...'} />
-            </div>
-          )}
-
           <div className="space-y-4 md:space-y-6">
             {activeJobs.length === 0 ? (
               <div className="text-center py-12 bg-primary-black border border-gold/20 rounded-lg">

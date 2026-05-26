@@ -37,6 +37,20 @@ export default function Internships() {
     ? internshipByIdResponse?.data || activeInternships.find((item) => item.id === id) || null
     : null
 
+  if (id && (isLoading || isFetching || isInternshipLoading || isInternshipFetching)) {
+    return (
+      <div dir="rtl" className="pt-20 md:pt-24 pb-16">
+        <section className="section-padding bg-charcoal">
+          <div className="container-max px-4 md:px-0">
+            <div className="py-16 flex justify-center">
+              <Loading inline message={isArabic ? 'جاري تحميل البرنامج التدريبي...' : 'Loading internship...'} />
+            </div>
+          </div>
+        </section>
+      </div>
+    )
+  }
+
   if (id && internship) {
     const internshipRequirements = parseRequirements(internship.requirements)
 
@@ -179,12 +193,6 @@ export default function Internships() {
       {/* Internships List */}
       <section className="section-padding bg-charcoal">
         <div className="container-max px-4 md:px-0">
-          {(isLoading || isFetching || isInternshipLoading || isInternshipFetching) && (
-            <div className="mb-4">
-              <Loading inline message={isArabic ? 'جاري تحميل برامج التدريب...' : 'Loading internships...'} />
-            </div>
-          )}
-
           <div className="space-y-4 md:space-y-6">
             {activeInternships.length === 0 ? (
               <div className="text-center py-12 bg-primary-black border border-gold/20 rounded-lg">

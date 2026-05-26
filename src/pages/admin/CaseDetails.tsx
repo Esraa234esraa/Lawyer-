@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useGetIssueById, useGetIssueTypes } from '@/hooks/issues'
 import { useLanguage } from '@/hooks/useLanguage'
+import Loading from '@/components/ui/Loading'
 
 const resolveAttachmentPath = (filePath: string | undefined) => {
   if (!filePath) return ''
@@ -34,7 +35,11 @@ export default function AdminCaseDetails() {
   }, [issue, issueTypes, isArabic])
 
   if (isLoading) {
-    return <div className="text-gray-300 font-cairo">{isArabic ? 'جاري تحميل بيانات القضية...' : 'Loading case details...'}</div>
+    return (
+      <div className="py-16 flex justify-center">
+        <Loading inline message={isArabic ? 'جاري تحميل بيانات القضية...' : 'Loading case details...'} />
+      </div>
+    )
   }
 
   if (!issue) {

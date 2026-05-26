@@ -48,7 +48,15 @@ export default function CaseDetails() {
     document.body.removeChild(link)
   }
 
-  if (isLoading) return <Loading message={isArabic ? 'جاري تحميل بيانات القضية...' : 'Loading case details...'} />
+  if (isLoading) {
+    return (
+      <div dir={isArabic ? 'rtl' : 'ltr'} className="space-y-6">
+        <div className="py-16 flex justify-center">
+          <Loading inline message={isArabic ? 'جاري تحميل بيانات القضية...' : 'Loading case details...'} />
+        </div>
+      </div>
+    )
+  }
 
   if (!issue) {
     return (

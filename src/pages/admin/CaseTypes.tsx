@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import Loading from '@/components/ui/Loading'
 import DataTable, { Column } from '@/components/admin/DataTable'
 import { useGetAllIssues, useGetIssueTypes } from '@/hooks/issues'
 import { Issue } from '@/types/issues'
@@ -110,7 +111,9 @@ export default function CaseTypes() {
             إجمالي الأنواع: {caseTypes.length}
           </p>
           {(isTypesLoading || isIssuesLoading || isTypesFetching) && (
-            <p className="text-gray-500 font-cairo text-xs mt-1">جاري تحميل البيانات...</p>
+            <div className="mt-2 flex justify-end">
+              <Loading inline message="جاري تحميل البيانات..." />
+            </div>
           )}
         </div>
         <Button

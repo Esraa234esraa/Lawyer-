@@ -46,6 +46,10 @@ const AdminConsultations = lazyImport(() => import('@/pages/admin/AdminConsultat
 const CasesAnalysisPage = lazyImport(() => import('@/pages/admin/CasesAnalysisPage'))
 const AccountSummaryPage = lazyImport(() => import('@/pages/admin/AccountSummaryPage'))
 const CaseTypes = lazyImport(() => import('@/pages/admin/CaseTypes'))
+const SessionsListPage = lazyImport(() => import('@/pages/admin/sessions/SessionsListPage'))
+const AddSessionPage = lazyImport(() => import('@/pages/admin/sessions/AddSessionPage'))
+const EditSessionPage = lazyImport(() => import('@/pages/admin/sessions/EditSessionPage'))
+const SessionDetailsPage = lazyImport(() => import('@/pages/admin/sessions/SessionDetailsPage'))
 
 // Client Pages
 const ClientDashboard = lazyImport(() => import('@/pages/client/Dashboard'))
@@ -110,6 +114,10 @@ export default function AppRoutes() {
           <Route path="/admin/opportunities" element={<AdminOpportunities />} />
           <Route path="/admin/cases-analysis" element={<CasesAnalysisPage />} />
           <Route path="/admin/account-summary" element={<AccountSummaryPage />} />
+          <Route path="/admin/sessions" element={<SessionsListPage />} />
+          <Route path="/admin/sessions/new" element={<AddSessionPage />} />
+          <Route path="/admin/sessions/:id" element={<SessionDetailsPage />} />
+          <Route path="/admin/sessions/:id/edit" element={<EditSessionPage />} />
         </Route>
 
         {/* Client */}

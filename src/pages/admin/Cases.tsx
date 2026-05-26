@@ -322,11 +322,11 @@ export default function AdminCases() {
         </Button>
       </motion.div>
 
-      {isLoading && <div className="mb-4 text-gray-300 font-cairo text-sm">جاري تحميل القضايا...</div>}
-
       <DataTable
         columns={columns}
         data={rows}
+        isLoading={isLoading || isFetching}
+        loadingMessage={isArabic ? 'جاري تحميل القضايا...' : 'Loading cases...'}
         onView={(row) => navigate(`/admin/cases/${row.id}`)}
         onEdit={(row) => {
           const issue = getIssueByRow(row)

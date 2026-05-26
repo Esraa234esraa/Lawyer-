@@ -2,6 +2,7 @@ import { motion } from 'framer-motion'
 import { useState, useEffect } from 'react'
 import { Plus } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import Loading from '@/components/ui/Loading'
 import DataTable, { Column } from '@/components/admin/DataTable'
 import Modal from '@/components/admin/Modal'
 import { toast } from 'sonner'
@@ -135,7 +136,7 @@ export default function AdminServices() {
 
   const backendMessage = !isLoading && data?.success === false ? data.message : ''
   const errorMessage = error instanceof Error ? error.message : 'حدث خطأ في تحميل البيانات'
-  const tableMessage = isLoading ? 'جاري تحميل الخدمات...' : backendMessage || (isError ? errorMessage : services.length === 0 ? 'لا توجد خدمات حالياً' : '')
+  const tableMessage = backendMessage || (isError ? errorMessage : services.length === 0 ? 'لا توجد خدمات حالياً' : '')
   const tableColSpan = columns.length + 1
 
   return (
@@ -153,7 +154,34 @@ export default function AdminServices() {
 
       {/* TABLE */}
       <div className="border border-gold/20 rounded-lg overflow-hidden max-w-full bg-charcoal/40">
-        {tableMessage ? (
+        {isLoading ? (
+          <div className="w-full overflow-x-auto">
+            <table className="min-w-full text-right">
+              <thead className="bg-primary-black border-b border-gold/20">
+                <tr>
+                  {columns.map((column) => (
+                    <th
+                      key={String(column.key)}
+                      className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap"
+                    >
+                      {column.labelAr}
+                    </th>
+                  ))}
+                  <th className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap">
+                    الإجراءات
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colSpan={tableColSpan} className="px-6 py-16 text-center text-gray-300 font-cairo">
+                    <Loading inline message="جاري تحميل الخدمات..." />
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        ) : tableMessage ? (
           <div className="w-full overflow-x-auto">
             <table className="min-w-full text-right">
               <thead className="bg-primary-black border-b border-gold/20">
@@ -227,7 +255,9 @@ export default function AdminServices() {
       {/* DETAILS MODAL */}
       <Modal isOpen={isDetailsOpen} onClose={handleCloseDetails} title="Service Details" titleAr="تفاصيل الخدمة">
         {detailsLoading ? (
-          <div className="text-white">جاري تحميل التفاصيل...</div>
+          <div className="py-6 flex justify-center">
+            <Loading inline message="جاري تحميل التفاصيل..." />
+          </div>
         ) : serviceDetails?.data ? (
           <div className="space-y-4 text-right">
             {serviceDetails.data.serviceImagePath && (
