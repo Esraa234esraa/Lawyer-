@@ -11,9 +11,9 @@ export const useSessions = (params?: SessionsQueryParams) => {
     gcTime: 10 * 60 * 1000,
   })
 
-  // Debug: log query state to help troubleshoot missing data in UI
-  if (process.env.NODE_ENV !== 'production') {
-    // eslint-disable-next-line no-console
+  // Debug: log query state to help troubleshoot missing data in UI (only in dev)
+  // eslint-disable-next-line no-console
+  if (import.meta.env.MODE !== 'production') {
     console.debug('[useSessions] query', {
       status: query.status,
       isLoading: query.isLoading,
