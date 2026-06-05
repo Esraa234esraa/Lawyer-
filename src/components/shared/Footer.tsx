@@ -96,11 +96,21 @@ export default function Footer() {
             <ul className="space-y-3 text-sm text-gray-400 font-cairo">
               <li className="flex items-center gap-2 flex-row-reverse">
                 <Phone size={16} className="text-gold" />
-                +966 11 234 5678
+                <a
+                  href="tel:+966112345678"
+                  className="hover:text-gold transition-colors"
+                >
+                  +966 11 234 5678
+                </a>
               </li>
               <li className="flex items-center gap-2 flex-row-reverse">
                 <Mail size={16} className="text-gold" />
-                info@lawfirm.sa
+                <a
+                  href="mailto:info@lawfirm.sa"
+                  className="hover:text-gold transition-colors"
+                >
+                  info@lawfirm.sa
+                </a>
               </li>
               <li className="flex items-center gap-2 flex-row-reverse">
                 <MapPin size={16} className="text-gold" />

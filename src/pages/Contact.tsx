@@ -118,7 +118,11 @@ export default function Contact() {
             >
               <Phone className="text-gold mb-4" size={32} />
               <h3 className="text-heading-3 font-cairo font-bold mb-2">الهاتف</h3>
-              <p className="text-gray-300 font-cairo">+966 11 234 5678</p>
+              <p className="text-gray-300 font-cairo">
+                <a href="tel:+966112345678" className="hover:text-gold transition-colors">
+                  +966 11 234 5678
+                </a>
+              </p>
             </motion.div>
 
             <motion.div
@@ -129,7 +133,11 @@ export default function Contact() {
             >
               <Mail className="text-gold mb-4" size={32} />
               <h3 className="text-heading-3 font-cairo font-bold mb-2">البريد الإلكتروني</h3>
-              <p className="text-gray-300 font-cairo">info@lawfirm.sa</p>
+              <p className="text-gray-300 font-cairo">
+                <a href="mailto:info@lawfirm.sa" className="hover:text-gold transition-colors">
+                  info@lawfirm.sa
+                </a>
+              </p>
               <p className="text-gold text-sm font-cairo mt-2">رد سريع</p>
             </motion.div>
 
