@@ -44,9 +44,11 @@ export default function ServiceCard({
       <h3 className="text-heading-3 font-cairo mb-3 group-hover:text-gold transition-colors">
         {isArabic ? titleAr : titleEn}
       </h3>
-      <div className="inline-block bg-gold/10 text-gold px-4 py-1 rounded-full text-sm font-semibold mb-3">
-        {isArabic ? priceAr : priceEn}
-      </div>
+      {(isArabic ? priceAr : priceEn) ? (
+        <div className="inline-block bg-gold/10 text-gold px-4 py-1 rounded-full text-sm font-semibold mb-3">
+          {isArabic ? priceAr : priceEn}
+        </div>
+      ) : null}
       <p className="text-gray-400 font-cairo mb-4">
         {isArabic ? descriptionAr : descriptionEn}
       </p>

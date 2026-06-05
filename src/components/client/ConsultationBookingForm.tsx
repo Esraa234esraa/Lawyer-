@@ -336,7 +336,7 @@ export default function ConsultationBookingForm({ onClose }: ConsultationBooking
                   </p>
                 </>
               )}
-              <img src={barcodeImg} alt="barcode" className="w-56 h-56 rounded-lg border-2 border-gold/30 bg-white" />
+              <img src={barcodeImg} alt="باركود الدفع لحجز الاستشارة القانونية" className="w-56 h-56 rounded-lg border-2 border-gold/30 bg-white" />
               <p className="mt-4 text-lg text-gold font-cairo font-bold text-center">
                 {isArabic ? 'يرجى مسح الباركود أعلاه والدفع عبر التطبيق البنكي، ثم اضغط متابعة لرفع إيصال الدفع.' : 'Please scan the barcode above and pay via your banking app, then click continue to upload the payment receipt.'}
               </p>

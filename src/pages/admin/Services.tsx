@@ -5,7 +5,6 @@ import Button from '@/components/ui/Button'
 import Loading from '@/components/ui/Loading'
 import DataTable, { Column } from '@/components/admin/DataTable'
 import Modal from '@/components/admin/Modal'
-import { toast } from 'sonner'
 import ServiceForm from '@/components/admin/ServiceForm'
 
 import {
@@ -86,9 +85,8 @@ export default function AdminServices() {
   const handleDelete = async (service: Service) => {
     try {
       await deleteMutation.mutateAsync(service.id)
-      toast.success('تم حذف الخدمة')
-    } catch (err: any) {
-      toast.error(err.message || 'حدث خطأ')
+    } catch {
+      // Error toast is handled by the mutation hook
     }
   }
 
@@ -101,7 +99,7 @@ export default function AdminServices() {
       render: (_v, item) =>
         item.serviceImagePath ? (
           <img
-            src={resolveImagePath(item.serviceImagePath)} alt="Service"
+            src={resolveImagePath(item.serviceImagePath)} alt={`صورة الخدمة: ${item.title}`}
             className="w-16 h-16 object-cover rounded-lg"
           />
         ) : (
@@ -156,10 +154,10 @@ export default function AdminServices() {
       <div className="border border-gold/20 rounded-lg overflow-hidden max-w-full bg-charcoal/40">
         {isLoading ? (
           <div className="w-full overflow-x-auto">
-            <table className="min-w-full text-right">
+            <table className="min-w-[1024px] w-full text-right">
               <thead className="bg-primary-black border-b border-gold/20">
                 <tr>
-                  {columns.map((column) => (
+                  {columns.map((column) => ( 
                     <th
                       key={String(column.key)}
                       className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap"
@@ -167,7 +165,7 @@ export default function AdminServices() {
                       {column.labelAr}
                     </th>
                   ))}
-                  <th className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap">
+                  <th className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap sticky left-0 bg-primary-black z-20">
                     الإجراءات
                   </th>
                 </tr>
@@ -183,7 +181,7 @@ export default function AdminServices() {
           </div>
         ) : tableMessage ? (
           <div className="w-full overflow-x-auto">
-            <table className="min-w-full text-right">
+            <table className="min-w-[1024px] w-full text-right">
               <thead className="bg-primary-black border-b border-gold/20">
                 <tr>
                   {columns.map((column) => (
@@ -194,7 +192,7 @@ export default function AdminServices() {
                       {column.labelAr}
                     </th>
                   ))}
-                  <th className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap">
+                  <th className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap sticky left-0 bg-primary-black z-20">
                     الإجراءات
                   </th>
                 </tr>
@@ -234,19 +232,21 @@ export default function AdminServices() {
           initialService={editingService}
           isPending={createMutation.isPending || updateMutation.isPending}
           onSubmit={async (data) => {
-            if (editingService) {
-              await updateMutation.mutateAsync({
-                id: editingService.id,
-                payload: data,
-              })
-              toast.success('تم التحديث')
-            } else {
-              await createMutation.mutateAsync(data)
-              toast.success('تمت الإضافة')
-            }
+            try {
+              if (editingService) {
+                await updateMutation.mutateAsync({
+                  id: editingService.id,
+                  payload: data,
+                })
+              } else {
+                await createMutation.mutateAsync(data)
+              }
 
-            setIsModalOpen(false)
-            setEditingService(null)
+              setIsModalOpen(false)
+              setEditingService(null)
+            } catch {
+              // Error toast is handled by the mutation hook
+            }
           }}
           onCancel={handleCloseModal}
         />
@@ -262,7 +262,7 @@ export default function AdminServices() {
           <div className="space-y-4 text-right">
             {serviceDetails.data.serviceImagePath && (
               <img
-                src={resolveImagePath(serviceDetails.data.serviceImagePath)} alt="Service Image"
+                src={resolveImagePath(serviceDetails.data.serviceImagePath)} alt={`صورة تفصيلية للخدمة: ${serviceDetails.data.title}`}
                 className="w-full h-60 object-cover rounded-lg mb-4"
               />
             )}

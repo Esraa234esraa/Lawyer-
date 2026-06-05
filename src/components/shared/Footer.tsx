@@ -116,7 +116,7 @@ export default function Footer() {
             <p className="text-gray-500 text-sm font-cairo">
               © {currentYear} مكتب مريم بنت محمد للمحاماة والاستشارات القانونية. جميع الحقوق محفوظة.
             </p>
-            <div className="flex gap-6 mt-4 md:mt-0">
+            {/* <div className="flex gap-6 mt-4 md:mt-0">
               <Link
                 to="#"
                 className="text-gray-500 hover:text-gold text-sm transition-colors font-cairo"
@@ -129,7 +129,7 @@ export default function Footer() {
               >
                 شروط الخدمة
               </Link>
-            </div>
+            </div> */}
           </div>
         </div>
       </div>

@@ -88,10 +88,26 @@ export const aboutData = {
   mission: 'تقديم خدمات قانونية عالية الجودة تتميز بالمهنية والابتكار والالتزام بالنزاهة',
   missionEn: 'Providing high-quality legal services characterized by professionalism, innovation, and commitment to integrity',
   values: [
-    { titleAr: 'الكفاءة', titleEn: 'Excellence', icon: '⭐' },
-    { titleAr: 'النزاهة', titleEn: 'Integrity', icon: '🛡️' },
-    { titleAr: 'الابتكار', titleEn: 'Innovation', icon: '💡' },
-    { titleAr: 'الشفافية', titleEn: 'Transparency', icon: '👁️' },
+    {
+      titleAr: 'العدالة والمسؤولية المهنية',
+      titleEn: 'Justice & Professional Responsibility',
+      icon: '⚖️',
+    },
+    {
+      titleAr: 'السرية والخصوصية',
+      titleEn: 'Confidentiality & Privacy',
+      icon: '🔒',
+    },
+    {
+      titleAr: 'الالتزام النظامي',
+      titleEn: 'Regulatory Compliance',
+      icon: '📜',
+    },
+    {
+      titleAr: 'الثقة والشراكة',
+      titleEn: 'Trust & Partnership',
+      icon: '🤝',
+    },
   ],
   team: [
     {

@@ -1,7 +1,10 @@
 import { motion } from 'framer-motion'
 import { useMemo, useState } from 'react'
+import { useConsultationClientsQuery } from '@/hooks/query/useConsultationClientsQuery'
+import { useClientAttachmentsQuery } from '@/hooks/query/useClientAttachmentsQuery'
 import { Plus, FileUp, Trash2 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
 import Button from '@/components/ui/Button'
 import DataTable, { Column } from '@/components/admin/DataTable'
 import Modal from '@/components/admin/Modal'
@@ -9,6 +12,10 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useAddIssue, useDeleteIssue, useGetAllIssues, useGetIssueTypes, useUpdateIssue } from '@/hooks/issues'
 import { Issue, IssueClientInput, IssueSubmitInput } from '@/types/issues'
 import { isValidGuid } from '@/services/issuesService'
+import axiosInstance from '@/api/axiosInstance'
+import ClientRow from '@/components/admin/ClientRow'
+import { ConsultationClient, ClientAttachment } from '@/services/consultationClientService'
+import { downloadAttachmentAsFile } from '@/utils/attachmentHelpers'
 
 type IssueRow = {
   id: string
@@ -31,6 +38,8 @@ type IssueClientForm = {
   nationalId: string
   nationalIdentityFile?: File
   nationalIdentityPath?: string
+  selectedClientId?: string
+  selectedAttachmentPaths?: string[]
 }
 
 const ALLOWED_IDENTITY_MIME_TYPES = new Set(['image/jpeg', 'image/png'])
@@ -50,6 +59,8 @@ export default function AdminCases() {
   const { data: issuesResponse, isLoading, isFetching } = useGetAllIssues()
   const { data: issueTypesResponse } = useGetIssueTypes()
 
+  const consultationClientsQuery = useConsultationClientsQuery()
+
   const issues = issuesResponse?.data || []
   const issueTypes = issueTypesResponse?.data || []
 
@@ -66,8 +77,104 @@ export default function AdminCases() {
   const [issueTypeId, setIssueTypeId] = useState('')
   const [issueAttachmentFiles, setIssueAttachmentFiles] = useState<File[]>([])
   const [issueClients, setIssueClients] = useState<IssueClientForm[]>([{ name: '', nationalId: '' }])
+  const [activeClientIndex, setActiveClientIndex] = useState<number | null>(null)
+  const [consultationDownloadedFiles, setConsultationDownloadedFiles] = useState<Record<string, File>>({})
+  const [attachmentDownloadStatus, setAttachmentDownloadStatus] = useState<Record<string, 'idle' | 'loading' | 'error'>>({})
+  const [attachmentDownloadError, setAttachmentDownloadError] = useState<Record<string, string>>({})
 
   const updateIssueMutation = useUpdateIssue(editingIssue?.id || '')
+
+  const currentActiveClient = useMemo(
+    () => (activeClientIndex !== null ? issueClients[activeClientIndex] : undefined),
+    [activeClientIndex, issueClients]
+  )
+
+  const activeClientId = currentActiveClient?.selectedClientId
+  const activeClientName = currentActiveClient?.name
+  const clientAttachmentsQuery = useClientAttachmentsQuery(activeClientId, Boolean(activeClientId))
+  const clientAttachments = (clientAttachmentsQuery.data || []) as ClientAttachment[]
+
+  const handleToggleClientAttachment = async (path: string, checked: boolean) => {
+    if (activeClientIndex === null) return
+
+    const index = activeClientIndex
+
+    if (checked) {
+      setAttachmentDownloadStatus((prev) => ({ ...prev, [path]: 'loading' }))
+      setAttachmentDownloadError((prev) => ({ ...prev, [path]: '' }))
+
+      try {
+        let file = consultationDownloadedFiles[path]
+
+        if (!file) {
+          file = await downloadAttachmentAsFile(path)
+          setConsultationDownloadedFiles((prev) => ({ ...prev, [path]: file }))
+        }
+
+        const isDuplicate = issueAttachmentFiles.some(
+          (existing) =>
+            existing.name === file.name &&
+            existing.size === file.size &&
+            existing.lastModified === file.lastModified
+        )
+
+        if (!isDuplicate) {
+          setIssueAttachmentFiles((prev) => [...prev, file])
+        }
+
+        setIssueClients((prev) =>
+          prev.map((client, idx) =>
+            idx === index
+              ? {
+                  ...client,
+                  selectedAttachmentPaths: Array.from(new Set([...(client.selectedAttachmentPaths || []), path])),
+                }
+              : client
+          )
+        )
+
+        toast.success('تم تحميل المرفق بنجاح')
+        setAttachmentDownloadStatus((prev) => ({ ...prev, [path]: 'idle' }))
+      } catch (error: any) {
+        const message = error?.message || 'فشل تحميل المرفق'
+        setAttachmentDownloadStatus((prev) => ({ ...prev, [path]: 'error' }))
+        setAttachmentDownloadError((prev) => ({ ...prev, [path]: message }))
+        toast.error(message)
+      }
+
+      return
+    }
+
+    setIssueClients((prev) =>
+      prev.map((client, idx) =>
+        idx === index
+          ? {
+              ...client,
+              selectedAttachmentPaths: (client.selectedAttachmentPaths || []).filter((p) => p !== path),
+            }
+          : client
+      )
+    )
+
+    const removedFile = consultationDownloadedFiles[path]
+    if (removedFile) {
+      setIssueAttachmentFiles((prev) =>
+        prev.filter(
+          (existing) =>
+            !(
+              existing.name === removedFile.name &&
+              existing.size === removedFile.size &&
+              existing.lastModified === removedFile.lastModified
+            )
+        )
+      )
+      setConsultationDownloadedFiles((prev) => {
+        const next = { ...prev }
+        delete next[path]
+        return next
+      })
+    }
+  }
 
   const isPending =
     addIssueMutation.isPending ||
@@ -91,7 +198,7 @@ export default function AdminCases() {
     const type = issueTypes.find((item) => item.id === id)
     return isArabic
       ? type?.nameAr || type?.nameEn || 'غير محدد'
-      : type?.nameEn || type?.nameAr || 'N/A'
+      : type?.nameEn || type?.nameAr || 'غير متوفر'
   }
 
   const resetForm = () => {
@@ -101,6 +208,7 @@ export default function AdminCases() {
     setIssueTypeId(issueTypes[0]?.id || '')
     setIssueAttachmentFiles([])
     setIssueClients([{ name: '', nationalId: '' }])
+    setActiveClientIndex(null)
     setErrors({})
   }
 
@@ -119,9 +227,12 @@ export default function AdminCases() {
               nationalId: String(client.nationalId),
               nationalIdentityFile: undefined,
               nationalIdentityPath: client.nationalIdentityPath,
+              selectedClientId: undefined,
+              selectedAttachmentPaths: [],
             }))
           : [{ name: '', nationalId: '' }]
       )
+      setActiveClientIndex(null)
       setErrors({})
       setIsModalOpen(true)
       return
@@ -160,15 +271,56 @@ export default function AdminCases() {
 
   const updateClientField = (index: number, key: keyof IssueClientForm, value: string | File | undefined) => {
     setIssueClients((prev) =>
+      prev.map((client, i) => {
+        if (i !== index) return client
+
+        if (key === 'name') {
+          const typedName = String(value || '')
+          const selected = ((consultationClientsQuery.data || []) as ConsultationClient[]).find(
+            (c) => c.id === client.selectedClientId
+          )
+
+          if (client.selectedClientId && selected && typedName !== selected.fullName) {
+            setActiveClientIndex((current) => (current === index ? null : current))
+            return {
+              ...client,
+              name: typedName,
+              selectedClientId: undefined,
+              selectedAttachmentPaths: [],
+            }
+          }
+
+          return {
+            ...client,
+            name: typedName,
+          }
+        }
+
+        return {
+          ...client,
+          [key]: value,
+        }
+      })
+    )
+  }
+
+  const handleSelectConsultationClient = (index: number, clientId?: string) => {
+    const clientsList = (consultationClientsQuery.data || []) as ConsultationClient[]
+    const selected = clientsList.find((c) => c.id === clientId)
+    setIssueClients((prev) =>
       prev.map((client, i) =>
         i === index
           ? {
               ...client,
-              [key]: value,
+              selectedClientId: clientId,
+              name: selected ? selected.fullName : client.name,
+              nationalId: '',
+              selectedAttachmentPaths: [],
             }
           : client
       )
     )
+    setActiveClientIndex(clientId ? index : null)
   }
 
   const validate = (): boolean => {
@@ -188,10 +340,12 @@ export default function AdminCases() {
 
     const hasAtLeastOneValidClient = issueClients.some(
       (client) =>
-        client.name.trim().length > 0 &&
-        client.nationalId.trim().length > 0 &&
-        Number.isFinite(Number(client.nationalId.trim())) &&
-        (Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0)
+        // allow selecting existing consultation client (selectedClientId) OR manual client with identity
+        (client.selectedClientId && client.selectedClientId.trim().length > 0) ||
+        (client.name.trim().length > 0 &&
+          client.nationalId.trim().length > 0 &&
+          Number.isFinite(Number(client.nationalId.trim())) &&
+          (Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0))
     )
 
     if (!hasAtLeastOneValidClient) {
@@ -200,6 +354,8 @@ export default function AdminCases() {
 
     const hasMissingIdentityPath = issueClients.some(
       (client) =>
+        // only consider manual clients for missing identity
+        !client.selectedClientId &&
         client.name.trim().length > 0 &&
         client.nationalId.trim().length > 0 &&
         Number.isFinite(Number(client.nationalId.trim())) &&
@@ -228,23 +384,46 @@ export default function AdminCases() {
 
     if (!validate()) return
 
+    // Prevent submitting while consultation attachment downloads are still in progress
+    const anyDownloading = Object.values(attachmentDownloadStatus).some((s) => s === 'loading')
+    if (anyDownloading) {
+      toast.error('جاري تحميل مرفقات العميل. انتظر حتى انتهاء التحميل ثم أعد المحاولة')
+      return
+    }
+
+    // Merge consultation-downloaded files with current uploaded files and dedupe
+    const downloadedFiles = Object.values(consultationDownloadedFiles || {})
+    const mergedFilesMap = new Map<string, File>()
+
+    const addFileToMap = (file: File) => {
+      const key = `${file.name}::${file.size}::${file.lastModified}`
+      if (!mergedFilesMap.has(key)) mergedFilesMap.set(key, file)
+    }
+
+    issueAttachmentFiles.forEach(addFileToMap)
+    downloadedFiles.forEach(addFileToMap)
+
+    const mergedFiles = Array.from(mergedFilesMap.values())
+
     const payload: IssueSubmitInput = {
       titeleAr: titeleAr.trim(),
       titeleEn: titeleEn.trim(),
       issueTypeId,
       defendant: defendant.trim(),
-      issueAttachmentFiles,
+      issueAttachmentFiles: mergedFiles,
       issueClients: issueClients
-        .filter(
-          (client) =>
-            client.name.trim() &&
+        .filter((client) =>
+          client.selectedClientId ||
+          (client.name.trim() &&
             client.nationalId.trim() &&
             Number.isFinite(Number(client.nationalId.trim())) &&
-            (Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0)
+            (Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0))
         )
         .map<IssueClientInput>((client) => ({
           name: client.name.trim(),
-          nationalId: Number(client.nationalId.trim()),
+          consultationClientId: client.selectedClientId,
+          nationalId: client.selectedClientId ? Number(client.nationalId.trim()) || 0 : Number(client.nationalId.trim()),
+          // Do NOT send selectedAttachmentPaths to backend — kept local only
           nationalIdentityPath: client.nationalIdentityPath?.trim(),
           nationalIdentityFile: client.nationalIdentityFile,
         })),
@@ -270,28 +449,28 @@ export default function AdminCases() {
     {
       key: 'titleAr',
       labelAr: 'الاسم',
-      labelEn: 'Title',
+      labelEn: 'الاسم',
     },
     {
       key: 'defendantAr',
       labelAr: 'المدعي عليه',
-      labelEn: 'Defendant',
+      labelEn: 'المدعي عليه',
     },
     {
       key: 'issueTypeId',
       labelAr: 'النوع',
-      labelEn: 'Type',
+      labelEn: 'النوع',
       render: (value) => getIssueTypeName(String(value)),
     },
     {
       key: 'clientsCount',
       labelAr: 'عدد العملاء',
-      labelEn: 'Clients',
+      labelEn: 'عدد العملاء',
     },
     {
       key: 'attachmentsCount',
       labelAr: 'عدد المرفقات',
-      labelEn: 'Attachments',
+      labelEn: 'عدد المرفقات',
     },
   ]
 
@@ -326,7 +505,7 @@ export default function AdminCases() {
         columns={columns}
         data={rows}
         isLoading={isLoading || isFetching}
-        loadingMessage={isArabic ? 'جاري تحميل القضايا...' : 'Loading cases...'}
+        loadingMessage={'جاري تحميل القضايا...'}
         onView={(row) => navigate(`/admin/cases/${row.id}`)}
         onEdit={(row) => {
           const issue = getIssueByRow(row)
@@ -334,11 +513,11 @@ export default function AdminCases() {
         }}
         onDelete={handleDelete}
         deleteTitleAr="حذف القضية"
-        deleteTitleEn="Delete Case"
+        deleteTitleEn="حذف"
         getDeleteLabel={(row) => row.titleAr}
       />
 
-      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="Add Case" titleAr="إضافة/تعديل قضية">
+      <Modal isOpen={isModalOpen} onClose={handleCloseModal} title="إضافة/تعديل قضية" titleAr="إضافة/تعديل قضية">
         <form onSubmit={handleSubmit} className="space-y-6" dir="rtl">
           <div>
             <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">عنوان القضية</label>
@@ -350,16 +529,6 @@ export default function AdminCases() {
               className="w-full px-4 py-2 rounded border border-gold/30 bg-charcoal text-white font-cairo focus:border-gold outline-none transition-colors"
             />
             {errors.titeleAr && <p className="text-red-400 text-xs mt-2">{errors.titeleAr}</p>}
-          </div>
-
-          <div>
-            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">العنوان الإنجليزي</label>
-            <input
-              type="text"
-              value={titeleEn}
-              onChange={(e) => setTiteleEn(e.target.value)}
-              className="w-full px-4 py-2 rounded border border-gold/30 bg-charcoal text-white font-cairo focus:border-gold outline-none transition-colors"
-            />
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
@@ -395,110 +564,135 @@ export default function AdminCases() {
           </div>
 
         <div>
-          <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">مرفقات القضية</label>
-          <div className="mb-4">
-            <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-gold/30 rounded-lg hover:border-gold cursor-pointer transition-colors">
-              <div className="flex flex-col items-center justify-center pt-2 pb-2">
-                <FileUp size={24} className="text-gold mb-2" />
-                <p className="text-sm font-cairo text-gold">اضغط لرفع ملفات</p>
-              </div>
-              <input type="file" multiple onChange={handleAttachmentUpload} className="hidden" />
-            </label>
-          </div>
-
-          {issueAttachmentFiles.length > 0 && (
-            <div className="space-y-2 max-h-48 overflow-y-auto">
-              {issueAttachmentFiles.map((file, index) => (
-                <div
-                  key={`${file.name}-${index}`}
-                  className="flex items-center justify-between p-3 bg-charcoal/50 rounded border border-gold/20"
-                >
-                  <div className="flex-1">
-                    <p className="text-sm font-cairo text-white">{file.name}</p>
-                    <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(2)} KB</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveAttachment(index)}
-                    className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                </div>
-                ))}
-              </div>
-            )}
-          </div>
-
           <div>
             <div className="flex items-center justify-between mb-3">
               <label className="block text-sm font-cairo font-semibold text-gold text-right">العملاء</label>
-              <button type="button" onClick={addClientRow} className="text-xs text-gold hover:text-gold-light font-cairo">
-                + إضافة عميل
-              </button>
+              <div className="flex items-center gap-3">
+                <button type="button" onClick={() => consultationClientsQuery.refetch()} className="text-xs text-gold hover:text-gold-light font-cairo">
+                  تحديث العملاء
+                </button>
+                <button type="button" onClick={addClientRow} className="text-xs text-gold hover:text-gold-light font-cairo">
+                  + إضافة عميل
+                </button>
+              </div>
             </div>
 
             <div className="space-y-3">
               {issueClients.map((client, index) => (
-                <div key={index} className="p-3 bg-charcoal/40 border border-gold/20 rounded-lg space-y-3">
-                  <div className="grid md:grid-cols-2 gap-3">
-                    <input
-                      type="text"
-                      placeholder="اسم العميل"
-                      value={client.name}
-                      onChange={(e) => updateClientField(index, 'name', e.target.value)}
-                      className="w-full px-3 py-2 rounded border border-gold/30 bg-charcoal text-white font-cairo focus:border-gold outline-none transition-colors"
-                    />
-                    <input
-                      type="text"
-                      placeholder="الهوية الوطنية"
-                      value={client.nationalId}
-                      onChange={(e) => updateClientField(index, 'nationalId', e.target.value)}
-                      className="w-full px-3 py-2 rounded border border-gold/30 bg-charcoal text-white font-cairo focus:border-gold outline-none transition-colors"
-                    />
-                  </div>
-
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="file"
-                      required={!client.nationalIdentityPath}
-                      accept=".jpg,.jpeg,.png,image/jpeg,image/png"
-                      onChange={(e) => {
-                        const file = e.target.files?.[0]
-                        if (file && !isAllowedIdentityImage(file)) {
-                          setErrors((prev) => ({
-                            ...prev,
-                            issueClients: 'الهوية الوطنية يجب أن تكون صورة بصيغة jpg أو jpeg أو png',
-                          }))
-                          e.target.value = ''
-                          updateClientField(index, 'nationalIdentityFile', undefined)
-                          return
-                        }
-
-                        updateClientField(index, 'nationalIdentityFile', file)
-                        updateClientField(index, 'nationalIdentityPath', file?.name)
-                      }}
-                      className="block w-full text-sm text-gray-300 font-cairo"
-                    />
-                    {issueClients.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeClientRow(index)}
-                        className="p-1 text-red-400 hover:text-red-300 transition-colors"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    )}
-                  </div>
-
-                  <p className="text-xs text-gray-400">إرفاق الهوية الوطنية بصيغة jpg أو jpeg أو png</p>
-                  {client.nationalIdentityPath && <p className="text-xs text-gray-400">ملف الهوية الحالي موجود</p>}
+                <div key={index}>
+                  <ClientRow
+                    client={client}
+                    index={index}
+                    clientsOptions={((consultationClientsQuery.data || []) as ConsultationClient[]).map((c) => ({ id: c.id, fullName: c.fullName }))}
+                    onChangeField={(i, key, value) => updateClientField(i, key as any, value)}
+                    onSelectClient={handleSelectConsultationClient}
+                    onRemove={removeClientRow}
+                  />
                 </div>
               ))}
             </div>
 
             {errors.issueClients && <p className="text-red-400 text-xs mt-2">{errors.issueClients}</p>}
           </div>
+
+          <div className="mt-4">
+            <label className="block text-sm font-cairo font-semibold text-gold mb-2 text-right">مرفقات القضية</label>
+            <div className="mb-4 space-y-3">
+              <div className="p-4 border border-gold/30 rounded-lg bg-charcoal/20">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="text-sm font-cairo text-gold">مرفقات العميل المحدد</p>
+                  {activeClientName && <span className="text-xs text-gray-400 font-cairo">{activeClientName}</span>}
+                </div>
+
+                {!activeClientId && (
+                  <p className="text-sm text-gray-400 font-cairo">اختر عميل استشارات من الأعلى لعرض مرفقاته هنا</p>
+                )}
+
+                {activeClientId && clientAttachmentsQuery.isLoading && (
+                  <p className="text-sm text-gray-400 font-cairo">جاري تحميل مرفقات العميل...</p>
+                )}
+
+                {activeClientId && clientAttachmentsQuery.isError && (
+                  <p className="text-sm text-red-400 font-cairo">حدث خطأ في جلب مرفقات العميل</p>
+                )}
+
+                {activeClientId && !clientAttachmentsQuery.isLoading && clientAttachments.length === 0 && (
+                  <p className="text-sm text-gray-400 font-cairo">لا توجد مرفقات لهذا العميل</p>
+                )}
+
+                {activeClientId && clientAttachments.length > 0 && (
+                  <div className="space-y-2">
+                    {clientAttachments.map((attachment) => (
+                      <div key={attachment.attachmentId} className="flex items-center justify-between p-3 bg-charcoal/50 rounded border border-gold/20">
+                        <div className="flex-1 text-right">
+                          <a
+                            href={`${axiosInstance.defaults.baseURL || ''}${attachment.attachmentIdPath}`}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="text-sm font-cairo text-white underline"
+                          >
+                            {attachment.attachmentIdPath.split('/').pop()}
+                          </a>
+                        </div>
+                        <div className="flex flex-col items-end gap-1">
+                          <label className="flex items-center gap-2 text-sm text-white font-cairo">
+                            <input
+                              type="checkbox"
+                              checked={(currentActiveClient?.selectedAttachmentPaths || []).includes(
+                                attachment.attachmentIdPath
+                              )}
+                              onChange={(e) => handleToggleClientAttachment(attachment.attachmentIdPath, e.target.checked)}
+                            />
+                            اختيار
+                          </label>
+                          {attachmentDownloadStatus[attachment.attachmentIdPath] === 'loading' && (
+                            <span className="text-xs text-gray-400 font-cairo">جاري التحميل...</span>
+                          )}
+                          {attachmentDownloadStatus[attachment.attachmentIdPath] === 'error' && (
+                            <span className="text-xs text-red-400 font-cairo">
+                              {attachmentDownloadError[attachment.attachmentIdPath]}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <label className="flex flex-col items-center justify-center w-full p-4 border-2 border-dashed border-gold/30 rounded-lg hover:border-gold cursor-pointer transition-colors">
+                <div className="flex flex-col items-center justify-center pt-2 pb-2">
+                  <FileUp size={24} className="text-gold mb-2" />
+                  <p className="text-sm font-cairo text-gold">اضغط لرفع ملفات</p>
+                </div>
+                <input type="file" multiple onChange={handleAttachmentUpload} className="hidden" />
+              </label>
+
+              {issueAttachmentFiles.length > 0 && (
+                <div className="space-y-2 max-h-48 overflow-y-auto">
+                  {issueAttachmentFiles.map((file, index) => (
+                    <div
+                      key={`${file.name}-${index}`}
+                      className="flex items-center justify-between p-3 bg-charcoal/50 rounded border border-gold/20"
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-cairo text-white">{file.name}</p>
+                        <p className="text-xs text-gray-400">{(file.size / 1024).toFixed(2)} KB</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveAttachment(index)}
+                        className="p-1 text-red-400 hover:text-red-300 transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
 
           <div className="flex gap-3 justify-end pt-4">
             <button

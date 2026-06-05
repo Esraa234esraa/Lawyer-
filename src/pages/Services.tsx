@@ -7,6 +7,8 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useGetServices } from '@/hooks/services'
 import type { Service as BackendService, ServiceChild } from '@/types/service'
 import { ArrowRight } from 'lucide-react'
+import Seo from '@/components/shared/Seo'
+import { DEFAULT_SOCIAL_IMAGE, pageUrl } from '@/constants/site'
 
 export default function Services() {
   const { isArabic } = useLanguage()
@@ -35,6 +37,12 @@ export default function Services() {
   if (isError) {
     return (
       <div className="pt-24 text-center text-red-400 font-cairo">
+        <Seo
+          title="الخدمات"
+          description="تعذر تحميل صفحة الخدمات القانونية. حاول مرة أخرى لاحقاً."
+          url={pageUrl('/services')}
+          image={DEFAULT_SOCIAL_IMAGE}
+        />
         {isArabic ? 'تعذر تحميل البيانات' : 'Failed to load data'}
       </div>
     )
@@ -44,6 +52,12 @@ export default function Services() {
   if (id && service) {
     return (
       <div dir="rtl" className="pt-24">
+        <Seo
+          title={service.title}
+          description={service.description}
+          image={resolveImagePath(service.serviceImagePath) || DEFAULT_SOCIAL_IMAGE}
+          url={pageUrl(`/services/${service.id}`)}
+        />
         <section className="section-padding bg-charcoal">
           <div className="container-max">
             <Link
@@ -138,6 +152,13 @@ export default function Services() {
   return (
     <div dir="rtl" className="pt-24">
 
+      <Seo
+        title="خدماتنا المتخصصة"
+        description="استعرض الخدمات القانونية التي يقدمها مكتب مريم بنت محمد للأفراد والشركات في مختلف المجالات القانونية."
+        url={pageUrl('/services')}
+        image={DEFAULT_SOCIAL_IMAGE}
+      />
+
       <section className="section-padding bg-charcoal">
         <div className="container-max text-center">
           <motion.div
@@ -180,8 +201,8 @@ export default function Services() {
                       titleEn={service.title}
                       descriptionAr={service.description}
                       descriptionEn={service.description}
-                      priceAr={service.price ? `${service.price} ر.س` : ''}
-                      priceEn={service.price ? `${service.price} SAR` : ''}
+                      priceAr=""
+                      priceEn=""
                       icon={''}
                       imageUrl={resolveImagePath(service.serviceImagePath)}
                       features={(service.childernTheServices || []).map(

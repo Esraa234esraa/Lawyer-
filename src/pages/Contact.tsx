@@ -2,13 +2,16 @@ import { motion } from 'framer-motion'
 import { useState } from 'react'
 import { Mail, Phone, MapPin } from 'lucide-react'
 import Button from '@/components/ui/Button'
-import { useLanguage } from '@/hooks/useLanguage'
+// الصفحة الآن عربية بالكامل — لا حاجة لاستيراد لغة
 import { useAddContact } from '@/hooks/contacts'
 import { toast } from 'sonner'
+import Seo from '@/components/shared/Seo'
+import { DEFAULT_SOCIAL_IMAGE, pageUrl } from '@/constants/site'
 
 export default function Contact() {
-  const { isArabic } = useLanguage()
+  // الصفحة ثابتة بالعربية
   const addContactMutation = useAddContact()
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -33,17 +36,17 @@ export default function Contact() {
     const email = formData.email.trim()
 
     if (!fullName) {
-      toast.error(isArabic ? 'الاسم الكامل مطلوب' : 'Full name is required')
+      toast.error('الاسم الكامل مطلوب')
       return false
     }
 
     if (!phoneNumber) {
-      toast.error(isArabic ? 'رقم الهاتف مطلوب' : 'Phone number is required')
+      toast.error('رقم الهاتف مطلوب')
       return false
     }
 
     if (email && !emailPattern.test(email)) {
-      toast.error(isArabic ? 'صيغة البريد الإلكتروني غير صحيحة' : 'Invalid email format')
+      toast.error('صيغة البريد الإلكتروني غير صحيحة')
       return false
     }
 
@@ -53,10 +56,11 @@ export default function Contact() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!validateForm() || addContactMutation.isPending) {
+    if (!validateForm() || addContactMutation.isPending || isSubmitting) {
       return
     }
 
+    setIsSubmitting(true)
     try {
       await addContactMutation.mutateAsync({
         fullName: formData.name.trim(),
@@ -75,11 +79,19 @@ export default function Contact() {
       })
     } catch {
       // Toast is handled by the mutation hook.
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
   return (
     <div dir="rtl" className="pt-24">
+      <Seo
+        title="تواصل معنا"
+        description="تواصل مع مكتب مريم بنت محمد للمحاماة والاستشارات القانونية عبر الهاتف أو البريد الإلكتروني أو نموذج التواصل."
+        url={pageUrl('/contact')}
+        image={DEFAULT_SOCIAL_IMAGE}
+      />
       {/* Hero */}
       <section className="section-padding bg-charcoal">
         <div className="container-max text-center">
@@ -88,14 +100,8 @@ export default function Contact() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">
-              {isArabic ? 'تواصل معنا' : 'Contact Us'}
-            </h1>
-            <p className="text-gray-300 font-cairo max-w-2xl mx-auto">
-              {isArabic
-                ? 'نحن هنا لمساعدتك. تواصل معنا اليوم'
-                : 'We are here to help you. Contact us today'}
-            </p>
+            <h1 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">تواصل معنا</h1>
+            <p className="text-gray-300 font-cairo max-w-2xl mx-auto">نحن هنا لمساعدتك. تواصل معنا اليوم</p>
           </motion.div>
         </div>
       </section>
@@ -111,11 +117,8 @@ export default function Contact() {
               className="p-8 bg-charcoal border border-gold/20 rounded-lg text-right"
             >
               <Phone className="text-gold mb-4" size={32} />
-              <h3 className="text-heading-3 font-cairo font-bold mb-2">
-                {isArabic ? 'الهاتف' : 'Phone'}
-              </h3>
+              <h3 className="text-heading-3 font-cairo font-bold mb-2">الهاتف</h3>
               <p className="text-gray-300 font-cairo">+966 11 234 5678</p>
-              <p className="text-gold text-sm font-cairo mt-2">24/7 Support</p>
             </motion.div>
 
             <motion.div
@@ -125,13 +128,9 @@ export default function Contact() {
               className="p-8 bg-charcoal border border-gold/20 rounded-lg text-right"
             >
               <Mail className="text-gold mb-4" size={32} />
-              <h3 className="text-heading-3 font-cairo font-bold mb-2">
-                {isArabic ? 'البريد الإلكتروني' : 'Email'}
-              </h3>
+              <h3 className="text-heading-3 font-cairo font-bold mb-2">البريد الإلكتروني</h3>
               <p className="text-gray-300 font-cairo">info@lawfirm.sa</p>
-              <p className="text-gold text-sm font-cairo mt-2">
-                {isArabic ? 'رد سريع' : 'Quick Response'}
-              </p>
+              <p className="text-gold text-sm font-cairo mt-2">رد سريع</p>
             </motion.div>
 
             <motion.div
@@ -141,13 +140,9 @@ export default function Contact() {
               className="p-8 bg-charcoal border border-gold/20 rounded-lg text-right"
             >
               <MapPin className="text-gold mb-4" size={32} />
-              <h3 className="text-heading-3 font-cairo font-bold mb-2">
-                {isArabic ? 'العنوان' : 'Address'}
-              </h3>
+              <h3 className="text-heading-3 font-cairo font-bold mb-2">العنوان</h3>
               <p className="text-gray-300 font-cairo">الرياض، المملكة العربية السعودية</p>
-              <p className="text-gold text-sm font-cairo mt-2">
-                {isArabic ? 'مكتب رئيسي' : 'Main Office'}
-              </p>
+              <p className="text-gold text-sm font-cairo mt-2">المكتب الرئيسي</p>
             </motion.div>
           </div>
 
@@ -162,37 +157,31 @@ export default function Contact() {
               className="space-y-6"
             >
               <div>
-                <label className="block text-sm font-cairo font-semibold text-gold mb-2">
-                  {isArabic ? 'الاسم' : 'Name'}
-                </label>
+                <label className="block text-sm font-cairo font-semibold text-gold mb-2">الاسم</label>
                 <input
                   type="text"
                   name="name"
                   value={formData.name}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
-                  placeholder={isArabic ? 'اسمك الكامل' : 'Your full name'}
+                  placeholder="اسمك الكامل"
                 />
               </div>
 
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-cairo font-semibold text-gold mb-2">
-                    {isArabic ? 'البريد الإلكتروني' : 'Email'}
-                  </label>
+                  <label className="block text-sm font-cairo font-semibold text-gold mb-2">البريد الإلكتروني</label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
                     className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
-                    placeholder="your@email.com"
+                    placeholder="البريد@المثال.كوم"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-cairo font-semibold text-gold mb-2">
-                    {isArabic ? 'الهاتف' : 'Phone'}
-                  </label>
+                  <label className="block text-sm font-cairo font-semibold text-gold mb-2">الهاتف</label>
                   <input
                     type="tel"
                     name="phone"
@@ -205,30 +194,26 @@ export default function Contact() {
               </div>
 
               <div>
-                <label className="block text-sm font-cairo font-semibold text-gold mb-2">
-                  {isArabic ? 'الموضوع' : 'Subject'}
-                </label>
+                <label className="block text-sm font-cairo font-semibold text-gold mb-2">الموضوع</label>
                 <input
                   type="text"
                   name="subject"
                   value={formData.subject}
                   onChange={handleChange}
                   className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right"
-                  placeholder={isArabic ? 'موضوع الرسالة' : 'Message subject'}
+                  placeholder="موضوع الرسالة"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-cairo font-semibold text-gold mb-2">
-                  {isArabic ? 'الرسالة' : 'Message'}
-                </label>
+                <label className="block text-sm font-cairo font-semibold text-gold mb-2">الرسالة</label>
                 <textarea
                   name="message"
                   value={formData.message}
                   onChange={handleChange}
                   rows={6}
                   className="w-full px-4 py-3 bg-charcoal border border-gold/20 rounded-lg text-white focus:border-gold focus:outline-none font-cairo text-right resize-none"
-                  placeholder={isArabic ? 'رسالتك' : 'Your message'}
+                  placeholder="رسالتك"
                 />
               </div>
 
@@ -236,10 +221,10 @@ export default function Contact() {
                 type="submit"
                 variant="primary"
                 size="lg"
-                isLoading={addContactMutation.isPending}
-                className="w-full font-cairo"
+                isLoading={addContactMutation.isPending || isSubmitting}
+                className="w-full font-cairo bg-gradient-to-r from-gold to-gold-light text-primary-black shadow-lg shadow-gold/20 hover:shadow-2xl hover:-translate-y-0.5 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                {isArabic ? 'إرسال الرسالة' : 'Send Message'}
+                إرسال الرسالة
               </Button>
             </motion.form>
 

@@ -1,0 +1,10 @@
+User-agent: *
+Disallow: /admin/
+Disallow: /client/
+Disallow: /login
+Disallow: /register
+Disallow: /password-reset
+Disallow: /book-consultation
+Disallow: /payment
+
+Sitemap: https://lawm.runasp.net/sitemap.xml

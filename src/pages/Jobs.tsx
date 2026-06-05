@@ -7,6 +7,8 @@ import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
 import { useGetAllOffers, useGetOfferById } from '@/hooks/offers'
 import InternshipApplicationForm from '@/components/client/InternshipApplicationForm'
+import Seo from '@/components/shared/Seo'
+import { DEFAULT_SOCIAL_IMAGE, pageUrl } from '@/constants/site'
 
 const parseRequirements = (requirements: string): string[] =>
   requirements
@@ -38,6 +40,12 @@ export default function Jobs() {
   if (id && (isLoading || isFetching || isJobLoading || isJobFetching)) {
     return (
       <div dir="rtl" className="pt-20 md:pt-24 pb-16">
+        <Seo
+          title="الوظائف"
+          description="اكتشف الوظائف القانونية المتاحة لدى مكتب مريم بنت محمد وتعرّف على متطلبات التقديم."
+          url={pageUrl('/jobs')}
+          image={DEFAULT_SOCIAL_IMAGE}
+        />
         <section className="section-padding bg-charcoal">
           <div className="container-max px-4 md:px-0">
             <div className="py-16 flex justify-center">
@@ -54,6 +62,12 @@ export default function Jobs() {
 
     return (
       <div dir="rtl" className="pt-20 md:pt-24 pb-16">
+        <Seo
+          title={isArabic ? job.nameAr : job.nameEn || job.nameAr}
+          description={job.description}
+          url={pageUrl(`/jobs/${job.id}`)}
+          image={DEFAULT_SOCIAL_IMAGE}
+        />
         {/* Breadcrumb */}
         <div className="bg-charcoal border-b border-gold/20">
           <div className="container-max py-3 md:py-4 px-4 md:px-0">
@@ -166,6 +180,12 @@ export default function Jobs() {
 
   return (
     <div dir="rtl" className="pt-20 md:pt-24 pb-16">
+      <Seo
+        title="الوظائف"
+        description="اكتشف الوظائف القانونية المتاحة لدى مكتب مريم بنت محمد وتعرّف على متطلبات التقديم."
+        url={pageUrl('/jobs')}
+        image={DEFAULT_SOCIAL_IMAGE}
+      />
       {/* Hero */}
       <section className="section-padding bg-gradient-to-br from-charcoal via-primary-black to-charcoal">
         <div className="container-max text-center px-4 md:px-0">

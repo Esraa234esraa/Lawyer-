@@ -29,14 +29,16 @@ export default function Button({
   isLoading = false,
   children,
   disabled,
+  className = '',
   ...props
 }: ButtonProps) {
   return (
     <motion.button
       whileHover={{ scale: 1.02 }}
       whileTap={{ scale: 0.98 }}
-      className={`${variantClasses[variant]} ${sizeClasses[size]} rtl:text-right flex items-center justify-center gap-2`}
+      className={`${variantClasses[variant]} ${sizeClasses[size]} rtl:text-right flex items-center justify-center gap-2 ${className}`}
       disabled={isLoading || disabled}
+      aria-busy={isLoading || disabled}
       {...props}
     >
       {isLoading ? (
@@ -57,7 +59,7 @@ export default function Button({
               d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
             />
           </svg>
-          <span>جاري...</span>
+          <span className="font-cairo">جاري...</span>
         </span>
       ) : (
         children

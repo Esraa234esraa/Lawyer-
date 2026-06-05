@@ -36,6 +36,8 @@ export interface IssueType {
 export interface IssueClientInput {
   name: string
   nationalId: number
+  consultationClientId?: string
+  selectedAttachmentPaths?: string[]
   nationalIdentityPath?: string
   nationalIdentityFile?: File
 }

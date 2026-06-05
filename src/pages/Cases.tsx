@@ -6,6 +6,8 @@ import Button from '@/components/ui/Button'
 import { useLanguage } from '@/hooks/useLanguage'
 import { casesData } from '@/data/mockData'
 import { ArrowRight } from 'lucide-react'
+import Seo from '@/components/shared/Seo'
+import { DEFAULT_SOCIAL_IMAGE, pageUrl } from '@/constants/site'
 
 export default function Cases() {
   const { isArabic } = useLanguage()
@@ -19,6 +21,13 @@ export default function Cases() {
   if (id && caseItem) {
     return (
       <div dir="rtl" className="pt-24">
+        <Seo
+          title={caseItem.titleAr}
+          description={caseItem.descriptionAr}
+          image={caseItem.image}
+          url={pageUrl(`/cases/${caseItem.id}`)}
+          type="article"
+        />
         <section className="section-padding bg-charcoal">
           <div className="container-max">
             <Link to="/cases" className="text-gold hover:text-gold-light mb-4 inline-flex items-center gap-2 font-cairo">
@@ -86,6 +95,12 @@ export default function Cases() {
 
   return (
     <div dir="rtl" className="pt-24">
+      <Seo
+        title="القضايا الناجحة"
+        description="استعرض أبرز القضايا الناجحة التي عمل عليها مكتب مريم بنت محمد للمحاماة والاستشارات القانونية."
+        url={pageUrl('/cases')}
+        image={DEFAULT_SOCIAL_IMAGE}
+      />
       {/* Hero */}
       <section className="section-padding bg-charcoal">
         <div className="container-max text-center">

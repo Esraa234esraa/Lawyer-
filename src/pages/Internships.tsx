@@ -9,12 +9,50 @@ import { useGetAllOffers, useGetOfferById } from '@/hooks/offers'
 import InternshipApplicationForm from '@/components/client/InternshipApplicationForm'
 import { useState } from 'react'
 // import { Offer } from '@/types/offer'
+import Seo from '@/components/shared/Seo'
+import { DEFAULT_SOCIAL_IMAGE, pageUrl } from '@/constants/site'
 
-const parseRequirements = (requirements: string): string[] =>
-  requirements
+const FALLBACK_TEXT = 'غير محدد'
+
+const normalizeText = (value?: string | null, fallback = FALLBACK_TEXT): string => {
+  if (typeof value !== 'string') return fallback
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : fallback
+}
+
+const formatDuration = (value?: string | null): string => {
+  const normalized = normalizeText(value)
+  if (normalized === FALLBACK_TEXT) return normalized
+
+  if (/[ء-ي]+\s*(شهر|أشهر|أسبوع|أسابيع|سنة|سنوات)|month|months|week|weeks|year|years/i.test(normalized)) {
+    return normalized
+  }
+
+  const singleNumber = normalized.match(/^\d+$/)
+  if (singleNumber) {
+    const count = Number(singleNumber[0])
+    if (Number.isFinite(count)) {
+      return count === 1 ? '1 شهر' : `${count} أشهر`
+    }
+  }
+
+  const range = normalized.match(/^(\d+)\s*[-–]\s*(\d+)$/)
+  if (range) {
+    return `${range[1]}-${range[2]} أشهر`
+  }
+
+  return normalized
+}
+
+const parseRequirements = (requirements?: string | null): string[] => {
+  const normalized = normalizeText(requirements, '')
+  if (!normalized) return []
+
+  return normalized
     .split(/\r?\n|,/) 
     .map((item) => item.trim())
     .filter(Boolean)
+}
 
 export default function Internships() {
   const { isArabic } = useLanguage()
@@ -40,6 +78,12 @@ export default function Internships() {
   if (id && (isLoading || isFetching || isInternshipLoading || isInternshipFetching)) {
     return (
       <div dir="rtl" className="pt-20 md:pt-24 pb-16">
+        <Seo
+          title="التدريبات"
+          description="اطلع على فرص التدريب القانونية المتاحة لدى مكتب مريم بنت محمد وتفاصيل التقديم."
+          url={pageUrl('/internships')}
+          image={DEFAULT_SOCIAL_IMAGE}
+        />
         <section className="section-padding bg-charcoal">
           <div className="container-max px-4 md:px-0">
             <div className="py-16 flex justify-center">
@@ -53,9 +97,21 @@ export default function Internships() {
 
   if (id && internship) {
     const internshipRequirements = parseRequirements(internship.requirements)
+    const internshipName = isArabic ? internship.nameAr : internship.nameEn || internship.nameAr
+    const safeName = normalizeText(internshipName)
+    const safeDescription = normalizeText(internship.description)
+    const safeDuration = formatDuration(internship.duration)
+    const safeAward = normalizeText(internship.award)
+    const safeLocation = normalizeText(internship.location)
 
     return (
       <div dir="rtl" className="pt-20 md:pt-24 pb-16">
+        <Seo
+          title={safeName}
+          description={safeDescription === FALLBACK_TEXT ? 'تفاصيل برنامج التدريب القانوني المتاح.' : safeDescription}
+          url={pageUrl(`/internships/${internship.id}`)}
+          image={DEFAULT_SOCIAL_IMAGE}
+        />
         {/* Breadcrumb */}
         <div className="bg-charcoal border-b border-gold/20">
           <div className="container-max py-3 md:py-4 px-4 md:px-0">
@@ -79,7 +135,7 @@ export default function Internships() {
                   transition={{ duration: 0.6 }}
                 >
                   <h1 className="text-heading-2 md:text-heading-1 font-cairo font-bold text-gradient mb-4">
-                    {isArabic ? internship.nameAr : internship.nameEn || internship.nameAr}
+                    {safeName}
                   </h1>
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 mb-8">
@@ -91,7 +147,7 @@ export default function Internships() {
                         </p>
                       </div>
                       <p className="text-gold font-cairo font-semibold text-sm md:text-base">
-                        {internship.duration}
+                        {safeDuration}
                       </p>
                     </div>
 
@@ -103,7 +159,7 @@ export default function Internships() {
                         </p>
                       </div>
                       <p className="text-gold font-cairo font-semibold text-sm md:text-base">
-                        {internship.award}
+                        {safeAward}
                       </p>
                     </div>
 
@@ -115,7 +171,7 @@ export default function Internships() {
                         </p>
                       </div>
                       <p className="text-gold font-cairo font-semibold text-sm md:text-base">
-                        {internship.location}
+                        {safeLocation}
                       </p>
                     </div>
 
@@ -126,7 +182,7 @@ export default function Internships() {
                       {isArabic ? 'تفاصيل البرنامج' : 'Program Details'}
                     </h2>
                     <p className="text-gray-300 font-cairo text-sm md:text-lg mb-4">
-                      {internship.description}
+                      {safeDescription}
                     </p>
                   </div>
 
@@ -135,12 +191,16 @@ export default function Internships() {
                       {isArabic ? 'المتطلبات' : 'Requirements'}
                     </h2>
                     <ul className="space-y-2">
-                      {internshipRequirements.map((req, idx) => (
-                        <li key={idx} className="text-gray-300 font-cairo text-sm md:text-base flex items-center gap-2 justify-end">
-                          <span>{req}</span>
-                          <span className="text-gold">✓</span>
-                        </li>
-                      ))}
+                      {internshipRequirements.length > 0 ? (
+                        internshipRequirements.map((req, idx) => (
+                          <li key={idx} className="text-gray-300 font-cairo text-sm md:text-base flex items-center gap-2 justify-end">
+                            <span>{req}</span>
+                            <span className="text-gold">✓</span>
+                          </li>
+                        ))
+                      ) : (
+                        <li className="text-gray-300 font-cairo text-sm md:text-base">{FALLBACK_TEXT}</li>
+                      )}
                     </ul>
                   </div>
 
@@ -170,6 +230,12 @@ export default function Internships() {
 
   return (
     <div dir="rtl" className="pt-20 md:pt-24 pb-16">
+      <Seo
+        title="التدريبات"
+        description="اطلع على فرص التدريب القانونية المتاحة لدى مكتب مريم بنت محمد وتفاصيل التقديم."
+        url={pageUrl('/internships')}
+        image={DEFAULT_SOCIAL_IMAGE}
+      />
       {/* Hero */}
       <section className="section-padding bg-gradient-to-br from-charcoal via-primary-black to-charcoal">
         <div className="container-max text-center px-4 md:px-0">
@@ -202,6 +268,15 @@ export default function Internships() {
               </div>
             ) : (
               activeInternships.map((internship, idx) => (
+                (() => {
+                  const internshipName = isArabic ? internship.nameAr : internship.nameEn || internship.nameAr
+                  const safeName = normalizeText(internshipName)
+                  const safeDescription = normalizeText(internship.description)
+                  const safeDuration = formatDuration(internship.duration)
+                  const safeAward = normalizeText(internship.award)
+                  const safeLocation = normalizeText(internship.location)
+
+                  return (
                 <motion.div
                   key={internship.id}
                   initial={{ opacity: 0, x: 20 }}
@@ -212,10 +287,10 @@ export default function Internships() {
                   <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                     <div className="flex-1 text-right w-full">
                       <h3 className="text-heading-3 md:text-heading-3 font-cairo font-bold text-gold mb-2">
-                        {isArabic ? internship.nameAr : internship.nameEn || internship.nameAr}
+                        {safeName}
                       </h3>
                       <p className="text-gray-300 font-cairo text-sm md:text-base mb-4">
-                        {internship.description}
+                        {safeDescription}
                       </p>
 
                       <div className="flex flex-wrap items-center justify-end gap-3 md:gap-6 mb-4">
@@ -224,7 +299,7 @@ export default function Internships() {
                             {isArabic ? 'المدة' : 'Duration'}
                           </p>
                           <p className="text-gold font-cairo font-semibold text-sm md:text-base">
-                            {internship.duration}
+                            {safeDuration}
                           </p>
                         </div>
                         <div className="text-right">
@@ -232,7 +307,7 @@ export default function Internships() {
                             {isArabic ? 'المكافأة' : 'Stipend'}
                           </p>
                           <p className="text-gold font-cairo font-semibold text-sm md:text-base">
-                            {internship.award}
+                            {safeAward}
                           </p>
                         </div>
                         <div className="text-right">
@@ -240,7 +315,7 @@ export default function Internships() {
                             {isArabic ? 'الموقع' : 'Location'}
                           </p>
                           <p className="text-gold font-cairo font-semibold text-sm md:text-base">
-                            {internship.location}
+                            {safeLocation}
                           </p>
                         </div>
                       </div>
@@ -256,6 +331,8 @@ export default function Internships() {
                     </Link>
                   </div>
                 </motion.div>
+                  )
+                })()
               ))
             )}
           </div>

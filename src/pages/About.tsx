@@ -4,6 +4,8 @@ import { useLanguage } from '@/hooks/useLanguage'
 import { useGetWhoAreWe } from '@/hooks/whoAreWe'
 import { aboutData } from '@/data/mockData'
 import Loading from '@/components/ui/Loading'
+import Seo from '@/components/shared/Seo'
+import { DEFAULT_SOCIAL_IMAGE, pageUrl } from '@/constants/site'
 
 export default function About() {
   const { isArabic } = useLanguage()
@@ -20,6 +22,12 @@ export default function About() {
 
   return (
     <div dir="rtl" className="pt-24">
+      <Seo
+        title="من نحن"
+        description="تعرف على مكتب مريم بنت محمد للمحاماة والاستشارات القانونية، ورؤيته ورسالة العمل والقيم التي يقوم عليها."
+        url={pageUrl('/about')}
+        image={DEFAULT_SOCIAL_IMAGE}
+      />
       {/* Hero */}
       <section className="section-padding bg-gradient-to-br from-charcoal via-primary-black to-charcoal">
         <div className="container-max text-center">
@@ -31,11 +39,23 @@ export default function About() {
             <h1 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">
               {isArabic ? 'من نحن' : 'About Us'}
             </h1>
-            <p className="text-gray-300 font-cairo max-w-2xl mx-auto">
-              {isArabic
-                ? 'نعرّف أنفسنا برسالتنا وقيمنا'
-                : 'Get to know us through our mission and values'}
-            </p>
+            <div className="text-gray-300 font-cairo max-w-2xl mx-auto space-y-4">
+              <p>
+                {isArabic
+                  ? 'شركاء في حماية الحقوق وصناعة الحلول القانونية'
+                  : 'Committed to protecting rights and crafting legal solutions.'}
+              </p>
+              <p>
+                {isArabic
+                  ? 'في مكتب المحامية مريم بنت محمد للمحاماة والاستشارات القانونية، نؤمن بأن العمل القانوني لا يقتصر على تقديم الاستشارات أو الترافع فحسب، بل يبدأ بفهم احتياجات العميل وتقديم حلول قانونية واضحة تحمي مصالحه وتمنحه الثقة لاتخاذ قراراته.'
+                  : 'At the office of Lawyer Maryam bint Mohammed, we believe legal work goes beyond advice and advocacy; it begins with understanding the client’s needs and delivering clear legal solutions that protect interests and build confidence.'}
+              </p>
+              <p>
+                {isArabic
+                  ? 'نقدم خدمات قانونية متخصصة للأفراد والشركات، مستندين إلى خبرة مهنية ومعرفة دقيقة بالأنظمة السعودية، مع التزام كامل بأعلى معايير الاحترافية والسرية والموثوقية.'
+                  : 'We offer specialized legal services for individuals and businesses, backed by professional expertise and deep knowledge of Saudi regulations, fully committed to the highest standards of professionalism, confidentiality, and trustworthiness.'}
+              </p>
+            </div>
           </motion.div>
         </div>
       </section>
@@ -87,7 +107,7 @@ export default function About() {
             className="text-center mb-16"
           >
             <h2 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">
-              {isArabic ? 'قيمنا الأساسية' : 'Our Core Values'}
+              قيمنا
             </h2>
           </motion.div>
 

@@ -1,19 +1,18 @@
 import { motion } from 'framer-motion'
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import NewsCard from '@/components/ui/NewsCard'
-import { useLanguage } from '@/hooks/useLanguage'
 import { useGetVisibleNews } from '@/hooks/news'
 import { ArrowRight } from 'lucide-react'
 import Loading from '@/components/ui/Loading'
+import Seo from '@/components/shared/Seo'
+import { DEFAULT_SOCIAL_IMAGE, pageUrl } from '@/constants/site'
 
 export default function News() {
-  const { isArabic } = useLanguage()
   const { id } = useParams()
-  const [filter, setFilter] = useState<string | null>(null)
   const { data, error, isLoading, isFetching } = useGetVisibleNews()
 
-  const newsData = data?.data || []
+  const newsData = (data?.data || []).filter((news) => news.isActive && news.isVisible)
 
   const resolveImagePath = (filePath: string) => {
     if (!filePath) return ''
@@ -28,22 +27,6 @@ export default function News() {
     return newsData.find((n) => n.id === id) || null
   }, [id, newsData])
 
-  const categories = useMemo(
-    () => [
-      isArabic ? 'الكل' : 'All',
-      isArabic ? 'النشطة' : 'Active',
-      isArabic ? 'غير النشطة' : 'Inactive',
-    ],
-    [isArabic]
-  )
-
-  const filteredNews = useMemo(() => {
-    if (!filter || filter === categories[0]) return newsData
-    if (filter === categories[1]) return newsData.filter((n) => n.isActive)
-    if (filter === categories[2]) return newsData.filter((n) => !n.isActive)
-    return newsData
-  }, [categories, filter, newsData])
-
   const relatedNews = useMemo(() => {
     if (!newsItem) return newsData.slice(0, 3)
     return newsData.filter((n) => n.id !== newsItem.id).slice(0, 3)
@@ -54,17 +37,24 @@ export default function News() {
       return error.message
     }
 
-    return isArabic ? 'لا توجد دراسة او دورات' : 'No news available'
-  }, [error, isArabic])
+    return 'لا توجد أخبار متاحة حالياً'
+  }, [error])
 
   if (id && newsItem) {
     return (
       <div dir="rtl" className="pt-24">
+        <Seo
+          title={newsItem.name}
+          description={newsItem.description}
+          image={resolveImagePath(newsItem.filePath) || DEFAULT_SOCIAL_IMAGE}
+          url={pageUrl(`/news/${newsItem.id}`)}
+          type="article"
+        />
         <section className="section-padding bg-charcoal">
           <div className="container-max">
             <Link to="/news" className="text-gold hover:text-gold-light mb-4 inline-flex items-center gap-2 font-cairo">
               <ArrowRight size={20} />
-              {isArabic ? 'العودة للأخبار' : 'Back to News'}
+              العودة للأخبار
             </Link>
 
             <div className="grid md:grid-cols-3 gap-8 mt-8">
@@ -81,15 +71,7 @@ export default function News() {
                   />
 
                   <div className="mb-4">
-                    <span className="text-xs bg-gold/20 text-gold px-3 py-1 rounded-full font-cairo">
-                      {newsItem.isActive
-                        ? isArabic
-                          ? 'نشط'
-                          : 'Active'
-                        : isArabic
-                        ? 'غير نشط'
-                        : 'Inactive'}
-                    </span>
+                    <span className="text-xs text-gold font-cairo">أخبار المكتب</span>
                   </div>
 
                   <h1 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">
@@ -97,7 +79,7 @@ export default function News() {
                   </h1>
 
                   <div className="flex items-center gap-4 text-gray-400 font-cairo mb-8 flex-row-reverse">
-                    <span>{isArabic ? 'أخبار المكتب' : 'Firm News'}</span>
+                    <span>أخبار المكتب</span>
                     <span>•</span>
                     <span>{new Date(newsItem.actionDate).toLocaleDateString('ar-SA')}</span>
                   </div>
@@ -117,7 +99,7 @@ export default function News() {
                 transition={{ duration: 0.8 }}
               >
                 <h3 className="text-heading-3 font-cairo font-bold mb-4 text-gold">
-                  {isArabic ? 'أخبار ذات صلة' : 'Related News'}
+                  أخبار ذات صلة
                 </h3>
                 <div className="space-y-4">
                   {relatedNews.map((news) => (
@@ -143,6 +125,12 @@ export default function News() {
 
   return (
     <div dir="rtl" className="pt-24">
+      <Seo
+        title="الأخبار والمقالات"
+        description="تابع أحدث الأخبار والمقالات القانونية الصادرة عن مكتب مريم بنت محمد للمحاماة والاستشارات القانونية."
+        url={pageUrl('/news')}
+        image={DEFAULT_SOCIAL_IMAGE}
+      />
       {/* Hero */}
       <section className="section-padding bg-charcoal">
         <div className="container-max text-center">
@@ -151,55 +139,16 @@ export default function News() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">
-              {isArabic ? 'الأخبار والمقالات' : 'News & Articles'}
-            </h1>
-            <p className="text-gray-300 font-cairo max-w-2xl mx-auto">
-              {isArabic
-                ? 'تابع أحدث التطورات القانونية والمقالات المتخصصة'
-                : 'Follow the latest legal developments and specialized articles'}
-            </p>
+            <h1 className="text-heading-1 font-cairo font-bold mb-4 text-gradient">الأخبار والمقالات</h1>
+            <p className="text-gray-300 font-cairo max-w-2xl mx-auto">تابع أحدث التطورات القانونية والمقالات المتخصصة</p>
           </motion.div>
-        </div>
-      </section>
-
-      {/* Filter */}
-      <section className="py-8 bg-primary-black border-b border-gold/20">
-        <div className="container-max">
-          <div className="flex justify-end gap-3 flex-wrap">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              onClick={() => setFilter(categories[0])}
-              className={`px-4 py-2 rounded-lg font-cairo transition-all ${
-                !filter || filter === categories[0]
-                  ? 'bg-gold text-primary-black'
-                  : 'bg-charcoal border border-gold/20 text-gold hover:border-gold'
-              }`}
-            >
-              {categories[0]}
-            </motion.button>
-            {categories.slice(1).map((category) => (
-              <motion.button
-                key={category}
-                whileHover={{ scale: 1.05 }}
-                onClick={() => setFilter(category)}
-                className={`px-4 py-2 rounded-lg font-cairo transition-all ${
-                  filter === category
-                    ? 'bg-gold text-primary-black'
-                    : 'bg-charcoal border border-gold/20 text-gold hover:border-gold'
-                }`}
-              >
-                {category}
-              </motion.button>
-            ))}
-          </div>
         </div>
       </section>
 
       {(isLoading || isFetching) && (
         <section className="py-4 bg-charcoal">
           <div className="container-max">
-            <Loading inline message={isArabic ? 'جاري تحميل الأخبار...' : 'Loading news...'} />
+            <Loading inline message="جاري تحميل الأخبار..." />
           </div>
         </section>
       )}
@@ -213,7 +162,7 @@ export default function News() {
             </div>
           ) : (
             <div className="grid md:grid-cols-3 gap-8">
-              {filteredNews.map((news) => (
+              {newsData.map((news) => (
                 <motion.div
                   key={news.id}
                   initial={{ opacity: 0, y: 20 }}
@@ -227,8 +176,6 @@ export default function News() {
                       descriptionAr={news.description}
                       descriptionEn={news.description}
                       date={String(news.actionDate)}
-                      categoryAr={news.isActive ? 'نشط' : 'غير نشط'}
-                      categoryEn={news.isActive ? 'Active' : 'Inactive'}
                       image={resolveImagePath(news.filePath)}
                       authorAr="أخبار المكتب"
                       authorEn="Firm News"

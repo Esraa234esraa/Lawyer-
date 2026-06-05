@@ -34,6 +34,38 @@ const defaultFormData: OpportunityFormData = {
   jobType: '',
 }
 
+const FALLBACK_TEXT = 'غير محدد'
+
+const normalizeText = (value?: string | null, fallback = FALLBACK_TEXT): string => {
+  if (typeof value !== 'string') return fallback
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : fallback
+}
+
+const formatDuration = (value?: string | null): string => {
+  const normalized = normalizeText(value)
+  if (normalized === FALLBACK_TEXT) return normalized
+
+  if (/[ء-ي]+\s*(شهر|أشهر|أسبوع|أسابيع|سنة|سنوات)|month|months|week|weeks|year|years/i.test(normalized)) {
+    return normalized
+  }
+
+  const singleNumber = normalized.match(/^\d+$/)
+  if (singleNumber) {
+    const count = Number(singleNumber[0])
+    if (Number.isFinite(count)) {
+      return count === 1 ? '1 شهر' : `${count} أشهر`
+    }
+  }
+
+  const range = normalized.match(/^(\d+)\s*[-–]\s*(\d+)$/)
+  if (range) {
+    return `${range[1]}-${range[2]} أشهر`
+  }
+
+  return normalized
+}
+
 const mapOfferToFormData = (offer: Offer): OpportunityFormData => ({
   nameAr: offer.nameAr,
   nameEn: offer.nameEn,
@@ -284,16 +316,14 @@ export default function AdminOpportunities() {
               <div className="flex items-start justify-between gap-4">
                 <div className="flex-1 text-right">
                   <h3 className="text-heading-3 font-cairo font-bold text-gold mb-2">
-                    {isArabic ? item.nameAr : item.nameEn || item.nameAr}
+                    {normalizeText(isArabic ? item.nameAr : item.nameEn || item.nameAr)}
                   </h3>
                   <p className="text-gray-300 font-cairo mb-2">
-                    {item.description}
+                    {normalizeText(item.description)}
                   </p>
-                  {item.location && (
-                    <p className="text-gray-400 font-cairo text-sm mb-2">
-                      {isArabic ? 'الموقع:' : 'Location:'} {item.location}
-                    </p>
-                  )}
+                  <p className="text-gray-400 font-cairo text-sm mb-2">
+                    {isArabic ? 'الموقع:' : 'Location:'} {normalizeText(item.location)}
+                  </p>
                   {item.isActive !== false && (
                     <span className="inline-block px-3 py-1 bg-green-500/20 text-green-400 rounded text-xs font-cairo font-semibold">
                       ✓ {isArabic ? 'نشط' : 'Active'}
@@ -350,45 +380,45 @@ export default function AdminOpportunities() {
             <>
               <div>
                 <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'العنوان' : 'Title'}</p>
-                <p className="text-gold font-cairo font-semibold">{isArabic ? detailsItem.nameAr : detailsItem.nameEn || detailsItem.nameAr}</p>
+                <p className="text-gold font-cairo font-semibold">{normalizeText(isArabic ? detailsItem.nameAr : detailsItem.nameEn || detailsItem.nameAr)}</p>
               </div>
 
               <div>
                 <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'الوصف' : 'Description'}</p>
-                <p className="text-gray-200 font-cairo">{detailsItem.description || '-'}</p>
+                <p className="text-gray-200 font-cairo">{normalizeText(detailsItem.description)}</p>
               </div>
 
               {activeTab === 'internships' ? (
                 <>
                   <div>
                     <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'المدة' : 'Duration'}</p>
-                    <p className="text-gray-200 font-cairo">{detailsItem.duration || '-'}</p>
+                    <p className="text-gray-200 font-cairo">{formatDuration(detailsItem.duration)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'المكافأة' : 'Award'}</p>
-                    <p className="text-gray-200 font-cairo">{detailsItem.award || '-'}</p>
+                    <p className="text-gray-200 font-cairo">{normalizeText(detailsItem.award)}</p>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
                     <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'الراتب' : 'Salary'}</p>
-                    <p className="text-gray-200 font-cairo">{detailsItem.salary || '-'}</p>
+                    <p className="text-gray-200 font-cairo">{normalizeText(detailsItem.salary)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'نوع الوظيفة' : 'Job Type'}</p>
-                    <p className="text-gray-200 font-cairo">{detailsItem.type || '-'}</p>
+                    <p className="text-gray-200 font-cairo">{normalizeText(detailsItem.type)}</p>
                   </div>
                   <div>
                     <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'الموقع' : 'Location'}</p>
-                    <p className="text-gray-200 font-cairo">{detailsItem.location || '-'}</p>
+                    <p className="text-gray-200 font-cairo">{normalizeText(detailsItem.location)}</p>
                   </div>
                 </>
               )}
 
               <div>
                 <p className="text-xs text-gray-400 font-cairo mb-1">{isArabic ? 'المتطلبات' : 'Requirements'}</p>
-                <p className="text-gray-200 font-cairo whitespace-pre-line">{detailsItem.requirements || '-'}</p>
+                <p className="text-gray-200 font-cairo whitespace-pre-line">{normalizeText(detailsItem.requirements)}</p>
               </div>
             </>
           )}

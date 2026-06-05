@@ -2,12 +2,20 @@ import { motion } from 'framer-motion'
 import AccordionItem from '@/components/ui/AccordionItem'
 import { useLanguage } from '@/hooks/useLanguage'
 import { faqData } from '@/data/mockData'
+import Seo from '@/components/shared/Seo'
+import { DEFAULT_SOCIAL_IMAGE, pageUrl } from '@/constants/site'
 
 export default function FAQ() {
   const { isArabic } = useLanguage()
 
   return (
     <div dir="rtl" className="pt-24">
+      <Seo
+        title="الأسئلة الشائعة"
+        description="إجابات مختصرة عن أبرز الأسئلة الشائعة حول خدمات مكتب مريم بنت محمد للمحاماة والاستشارات القانونية."
+        url={pageUrl('/faq')}
+        image={DEFAULT_SOCIAL_IMAGE}
+      />
       {/* Hero */}
       <section className="section-padding bg-charcoal">
         <div className="container-max text-center">

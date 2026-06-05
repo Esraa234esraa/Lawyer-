@@ -13,8 +13,16 @@ export const useAddContact = () => {
       toast.success(response.message || 'تم إرسال رسالتك بنجاح')
       queryClient.invalidateQueries({ queryKey: CONTACTS_QUERY_KEYS.all })
     },
-    onError: (error: Error) => {
-      toast.error(error.message || 'فشل في إرسال الرسالة')
+    onError: (error: unknown) => {
+      // Log full error details only during development for debugging
+      // Do NOT expose stack traces or internal data to end users
+      if (import.meta.env.DEV) {
+        // eslint-disable-next-line no-console
+        console.error('Add contact error:', error)
+      }
+
+      const message = error instanceof Error ? error.message : 'فشل في إرسال الرسالة'
+      toast.error(message)
     },
   })
 }

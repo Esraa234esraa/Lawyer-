@@ -8,8 +8,8 @@ interface NewsCardProps {
   descriptionAr: string
   descriptionEn: string
   date: string
-  categoryAr: string
-  categoryEn: string
+  categoryAr?: string
+  categoryEn?: string
   image: string
   authorAr: string
   authorEn: string
@@ -22,8 +22,6 @@ export default function NewsCard({
   descriptionAr,
   descriptionEn,
   date,
-  categoryAr,
-  categoryEn,
   image,
   authorAr,
   authorEn,
@@ -44,9 +42,6 @@ export default function NewsCard({
       <div className="p-6 text-right">
         <div className="flex items-center justify-end gap-3 mb-3">
           <span className="text-xs text-gold font-cairo">{formatDate(date)}</span>
-          <span className="text-xs bg-gold/20 text-gold px-3 py-1 rounded-full font-cairo">
-            {isArabic ? categoryAr : categoryEn}
-          </span>
         </div>
         <h3 className="text-heading-3 font-cairo mb-2">{isArabic ? titleAr : titleEn}</h3>
         <p className="text-gray-400 text-sm font-cairo mb-3">{isArabic ? descriptionAr : descriptionEn}</p>

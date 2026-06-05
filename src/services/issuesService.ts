@@ -172,6 +172,9 @@ export const buildIssueFormData = (input: IssueSubmitInput): FormData => {
 
   input.issueClients.forEach((client, index) => {
     formData.append(`IssueClients[${index}].name`, client.name)
+    if (client.consultationClientId) {
+      formData.append(`IssueClients[${index}].ConsultationClientId`, client.consultationClientId)
+    }
     if (client.nationalIdentityFile) {
       formData.append(
         `IssueClients[${index}].nationalIdentityPath`,
@@ -182,6 +185,9 @@ export const buildIssueFormData = (input: IssueSubmitInput): FormData => {
       formData.append(`IssueClients[${index}].nationalIdentityPath`, client.nationalIdentityPath || '')
     }
     formData.append(`IssueClients[${index}].nationalId`, String(client.nationalId))
+    // Note: selectedAttachmentPaths are kept as local UI state only and are
+    // intentionally NOT sent to the backend. Consultation attachments are
+    // converted to File objects and appended via `IssueAttachmentDTOs`.
   })
 
   return formData

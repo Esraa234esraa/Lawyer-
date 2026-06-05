@@ -1,0 +1,10 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="630" rx="40" fill="#111111"/>
+  <rect x="48" y="48" width="1104" height="534" rx="32" fill="#1B1B1B" stroke="#C6A75E" stroke-opacity="0.35"/>
+  <circle cx="978" cy="132" r="110" fill="#C6A75E" fill-opacity="0.12"/>
+  <circle cx="242" cy="486" r="150" fill="#C6A75E" fill-opacity="0.08"/>
+  <text x="96" y="210" fill="#C6A75E" font-family="Arial, sans-serif" font-size="58" font-weight="700">مكتب مريم بنت محمد</text>
+  <text x="96" y="286" fill="#FFFFFF" font-family="Arial, sans-serif" font-size="40" font-weight="400">للمحاماة والاستشارات القانونية</text>
+  <text x="96" y="378" fill="#D1D5DB" font-family="Arial, sans-serif" font-size="30" font-weight="400">خدمات قانونية موثوقة وحلول مهنية متكاملة</text>
+  <text x="96" y="438" fill="#D1D5DB" font-family="Arial, sans-serif" font-size="30" font-weight="400">للأفراد والشركات</text>
+</svg>

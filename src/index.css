@@ -73,7 +73,8 @@
   }
 
   .btn-primary {
-    @apply btn bg-gold text-primary-black hover:bg-gold-light;
+    /* More polished primary button: gradient, subtle scale, shadow, and disabled state */
+    @apply btn gradient-gold text-primary-black transform hover:scale-105 hover:shadow-xl active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed;
   }
 
   .btn-secondary {

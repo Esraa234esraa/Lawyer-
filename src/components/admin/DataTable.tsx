@@ -82,7 +82,7 @@ export default function DataTable<T extends { id: number | string }>({
       dir="rtl"
     >
       <div className="w-full overflow-x-auto">
-        <table className="min-w-full text-right">
+        <table className="min-w-[1024px] w-full text-right">
           <thead className="bg-primary-black border-b border-gold/20">
             <tr>
               {columns.map((column) => (
@@ -94,7 +94,7 @@ export default function DataTable<T extends { id: number | string }>({
                 </th>
               ))}
               {actions && (
-                <th className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap">
+                <th className="px-6 py-4 text-sm font-cairo font-semibold text-gold text-right whitespace-nowrap sticky left-0 bg-primary-black z-20">
                   {isArabic ? 'الإجراءات' : 'Actions'}
                 </th>
               )}
@@ -150,8 +150,8 @@ export default function DataTable<T extends { id: number | string }>({
                     );
                   })}
                   {actions && (
-                    <td className="px-6 py-4 text-right whitespace-nowrap">
-                      <div className="flex items-center gap-2 justify-end">
+                    <td className="px-6 py-4 text-right whitespace-nowrap sticky left-0 bg-charcoal/95 z-10">
+                      <div className="flex flex-wrap items-center justify-end gap-2">
 
                         {onSubmit &&
                           (item as any).status === 'new' &&
