@@ -42,6 +42,12 @@ type IssueClientForm = {
   selectedAttachmentPaths?: string[]
 }
 
+type ClientAttachmentItem = {
+  attachmentId: string
+  attachmentIdPath: string
+  isNational?: boolean
+}
+
 const ALLOWED_IDENTITY_MIME_TYPES = new Set(['image/jpeg', 'image/png'])
 const ALLOWED_IDENTITY_EXTENSIONS = ['jpg', 'jpeg', 'png']
 
@@ -95,7 +101,39 @@ export default function AdminCases() {
   const activeClientId = currentActiveClient?.selectedClientId
   const activeClientName = currentActiveClient?.name
   const clientAttachmentsQuery = useClientAttachmentsQuery(activeClientId, Boolean(activeClientId))
-  const clientAttachments = (clientAttachmentsQuery.data || []) as ClientAttachment[]
+  const clientAttachments = Array.isArray(clientAttachmentsQuery.data)
+    ? (clientAttachmentsQuery.data as ClientAttachment[])
+    : []
+
+  const normalizedClientAttachments = useMemo<ClientAttachmentItem[]>(() => {
+    if (!Array.isArray(clientAttachments)) {
+      return []
+    }
+
+    return clientAttachments.flatMap((attachment, attachmentIndex) => {
+      const paths = Array.isArray(attachment.attachmentIdPath)
+        ? attachment.attachmentIdPath
+        : typeof attachment.attachmentIdPath === 'string'
+        ? [attachment.attachmentIdPath]
+        : []
+
+      const attachmentItems = paths.map((path, index) => ({
+        attachmentId: attachment.attachmentId || `${attachmentIndex}-${index}`,
+        attachmentIdPath: path,
+        isNational: false,
+      }))
+
+      if (attachment.nationalPath) {
+        attachmentItems.push({
+          attachmentId: attachment.attachmentId ? `${attachment.attachmentId}-national` : `${attachmentIndex}-national`,
+          attachmentIdPath: attachment.nationalPath,
+          isNational: true,
+        })
+      }
+
+      return attachmentItems
+    })
+  }, [clientAttachments])
 
   const handleToggleClientAttachment = async (path: string, checked: boolean) => {
     if (activeClientIndex === null) return
@@ -167,6 +205,22 @@ export default function AdminCases() {
         return next
       })
     }
+  }
+
+  const handleToggleClientNationalIdentityPath = (path: string, checked: boolean) => {
+    if (activeClientIndex === null) return
+
+    setIssueClients((prev) =>
+      prev.map((client, idx) =>
+        idx === activeClientIndex
+          ? {
+              ...client,
+              nationalIdentityPath: checked ? path : client.nationalIdentityPath === path ? '' : client.nationalIdentityPath,
+              nationalIdentityFile: checked ? undefined : client.nationalIdentityFile,
+            }
+          : client
+      )
+    )
   }
 
   const isPending =
@@ -309,9 +363,9 @@ export default function AdminCases() {
               ...client,
               selectedClientId: clientId,
               name: selected ? selected.fullName : client.name,
-              // try to fill nationalId and identity path if provided by API
               nationalId: selected && selected.nationalId ? String(selected.nationalId) : client.nationalId,
               nationalIdentityPath: selected && selected.nationalIdentityPath ? selected.nationalIdentityPath : client.nationalIdentityPath,
+              nationalIdentityFile: undefined,
               selectedAttachmentPaths: [],
             }
           : client
@@ -319,39 +373,6 @@ export default function AdminCases() {
     )
 
     setActiveClientIndex(clientId ? index : null)
-
-    // If the selected client includes an identity path, try to download and attach it
-    const identityPath = selected && selected.nationalIdentityPath
-    if (identityPath) {
-      try {
-        setAttachmentDownloadStatus((prev) => ({ ...prev, [identityPath]: 'loading' }))
-        setAttachmentDownloadError((prev) => ({ ...prev, [identityPath]: '' }))
-
-        let file = consultationDownloadedFiles[identityPath]
-        if (!file) {
-          file = await downloadAttachmentAsFile(identityPath)
-          setConsultationDownloadedFiles((prev) => ({ ...prev, [identityPath]: file }))
-        }
-
-        // set the downloaded file into the specific client row
-        setIssueClients((prev) =>
-          prev.map((client, i) =>
-            i === index
-              ? {
-                  ...client,
-                  nationalIdentityFile: file,
-                  nationalIdentityPath: identityPath,
-                }
-              : client
-          )
-        )
-
-        setAttachmentDownloadStatus((prev) => ({ ...prev, [identityPath]: 'idle' }))
-      } catch (err: any) {
-        setAttachmentDownloadStatus((prev) => ({ ...prev, [identityPath]: 'error' }))
-        setAttachmentDownloadError((prev) => ({ ...prev, [identityPath]: err?.message || 'فشل تحميل الهوية' }))
-      }
-    }
   }
 
   const validate = (): boolean => {
@@ -369,30 +390,30 @@ export default function AdminCases() {
       nextErrors.issueTypeId = 'نوع القضية غير صالح'
     }
 
-    const hasAtLeastOneValidClient = issueClients.some(
-      (client) =>
-        // allow selecting existing consultation client (selectedClientId) OR manual client with identity
-        (client.selectedClientId && client.selectedClientId.trim().length > 0) ||
-        (client.name.trim().length > 0 &&
-          client.nationalId.trim().length > 0 &&
-          Number.isFinite(Number(client.nationalId.trim())) &&
-          (Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0))
-    )
+    const hasClientIdentity = (client: IssueClientForm) =>
+      Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0
+
+    const hasAtLeastOneValidClient = issueClients.some((client) => {
+      const hasValidId =
+        client.name.trim().length > 0 &&
+        client.nationalId.trim().length > 0 &&
+        Number.isFinite(Number(client.nationalId.trim()))
+
+      return hasValidId && hasClientIdentity(client)
+    })
 
     if (!hasAtLeastOneValidClient) {
       nextErrors.issueClients = 'يجب إضافة عميل واحد على الأقل مع مسار الهوية الوطنية'
     }
 
-    const hasMissingIdentityPath = issueClients.some(
-      (client) =>
-        // only consider manual clients for missing identity
-        !client.selectedClientId &&
+    const hasMissingIdentityPath = issueClients.some((client) => {
+      const hasValidId =
         client.name.trim().length > 0 &&
         client.nationalId.trim().length > 0 &&
-        Number.isFinite(Number(client.nationalId.trim())) &&
-        !client.nationalIdentityFile &&
-        (client.nationalIdentityPath || '').trim().length === 0
-    )
+        Number.isFinite(Number(client.nationalId.trim()))
+
+      return hasValidId && !hasClientIdentity(client)
+    })
 
     if (hasMissingIdentityPath) {
       nextErrors.issueClients = 'ملف الهوية الوطنية مطلوب لكل عميل'
@@ -450,13 +471,15 @@ export default function AdminCases() {
       defendant: defendant.trim(),
       issueAttachmentDTOs: mergedFiles,
       issueClients: issueClients
-        .filter((client) =>
-          client.selectedClientId ||
-          (client.name.trim() &&
-            client.nationalId.trim() &&
-            Number.isFinite(Number(client.nationalId.trim())) &&
-            (Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0))
-        )
+        .filter((client) => {
+          const hasValidId =
+            client.name.trim().length > 0 &&
+            client.nationalId.trim().length > 0 &&
+            Number.isFinite(Number(client.nationalId.trim()))
+          const hasClientIdentity =
+            Boolean(client.nationalIdentityFile) || (client.nationalIdentityPath || '').trim().length > 0
+          return hasValidId && hasClientIdentity
+        })
         .map<IssueClientInput>((client) => ({
           name: client.name.trim(),
           consultationClientId: client.selectedClientId,
@@ -658,9 +681,9 @@ export default function AdminCases() {
                   <p className="text-sm text-gray-400 font-cairo">لا توجد مرفقات لهذا العميل</p>
                 )}
 
-                {activeClientId && clientAttachments.length > 0 && (
+                {activeClientId && normalizedClientAttachments.length > 0 && (
                   <div className="space-y-2">
-                    {clientAttachments.map((attachment) => (
+                    {normalizedClientAttachments.map((attachment) => (
                       <div key={attachment.attachmentId} className="flex items-center justify-between p-3 bg-charcoal/50 rounded border border-gold/20">
                         <div className="flex-1 text-right">
                           <a
@@ -671,17 +694,28 @@ export default function AdminCases() {
                           >
                             {attachment.attachmentIdPath.split('/').pop()}
                           </a>
+                          <p className="text-xs text-gray-400 mt-1">
+                            {attachment.isNational ? 'هوية وطنية' : 'مرفق العميل'}
+                          </p>
                         </div>
                         <div className="flex flex-col items-end gap-1">
                           <label className="flex items-center gap-2 text-sm text-white font-cairo">
                             <input
                               type="checkbox"
-                              checked={(currentActiveClient?.selectedAttachmentPaths || []).includes(
-                                attachment.attachmentIdPath
-                              )}
-                              onChange={(e) => handleToggleClientAttachment(attachment.attachmentIdPath, e.target.checked)}
+                              checked={
+                                attachment.isNational
+                                  ? currentActiveClient?.nationalIdentityPath === attachment.attachmentIdPath
+                                  : (currentActiveClient?.selectedAttachmentPaths || []).includes(
+                                      attachment.attachmentIdPath
+                                    )
+                              }
+                              onChange={(e) =>
+                                attachment.isNational
+                                  ? handleToggleClientNationalIdentityPath(attachment.attachmentIdPath, e.target.checked)
+                                  : handleToggleClientAttachment(attachment.attachmentIdPath, e.target.checked)
+                              }
                             />
-                            اختيار
+                            {attachment.isNational ? 'اختر الهوية الوطنية' : 'اختيار'}
                           </label>
                           {attachmentDownloadStatus[attachment.attachmentIdPath] === 'loading' && (
                             <span className="text-xs text-gray-400 font-cairo">جاري التحميل...</span>

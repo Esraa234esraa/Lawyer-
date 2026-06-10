@@ -70,6 +70,10 @@ export default function ClientRow({ client, index, clientsOptions, onChangeField
         </button>
       </div>
 
+      {client.nationalIdentityPath && !client.nationalIdentityFile ? (
+        <p className="text-xs text-green-300">تم اختيار الهوية الوطنية الحالية: {client.nationalIdentityPath.split('/').pop()}</p>
+      ) : null}
+
       <p className="text-xs text-gray-400">إرفاق الهوية الوطنية بصيغة jpg أو jpeg أو png</p>
     </div>
   )

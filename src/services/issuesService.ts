@@ -190,6 +190,20 @@ export const buildIssueFormData = (input: IssueSubmitInput): FormData => {
     // converted to File objects and appended via `IssueAttachmentDTOs`.
   })
 
+  if (import.meta.env.DEV) {
+    const entries: Record<string, unknown> = {}
+    ;(formData as any).forEach((value: unknown, key: string) => {
+      if (!entries[key]) {
+        entries[key] = value
+      } else if (Array.isArray(entries[key])) {
+        ;(entries[key] as unknown[]).push(value)
+      } else {
+        entries[key] = [entries[key] as unknown, value]
+      }
+    })
+    console.debug('buildIssueFormData entries:', entries)
+  }
+
   return formData
 }
 
