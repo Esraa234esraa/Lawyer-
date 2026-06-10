@@ -31,6 +31,17 @@ export default function Header() {
 
           <div className="flex items-center justify-start lg:justify-between gap-3">
 
+            {/* Mobile menu button (shown first on small screens to appear at far right) */}
+            {!isAdminArea && (
+              <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="lg:hidden text-gold order-first"
+                aria-label="Toggle menu"
+              >
+                {isOpen ? <X size={24} /> : <Menu size={24} />}
+              </button>
+            )}
+
             {/* Logo */}
             <Link to="/" onClick={() => setIsOpen(false)} className={isAdminArea ? 'block' : 'hidden lg:block'}>
               <motion.div
@@ -126,12 +137,7 @@ export default function Header() {
                 )
               )}
 
-              {/* Mobile menu button */}
-              {!isAdminArea && (
-                <button onClick={() => setIsOpen(!isOpen)} className="lg:hidden text-gold">
-                  {isOpen ? <X size={24} /> : <Menu size={24} />}
-                </button>
-              )}
+              {/* Mobile menu button removed from here (moved to start for small screens) */}
 
             </div>
           </div>

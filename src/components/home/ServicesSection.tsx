@@ -8,13 +8,32 @@ type ServicesSectionProps = {
   services: Service[]
   isLoading: boolean
   resolveImagePath: (filePath?: string | null) => string
+  serverMessage?: string
+  serverError?: string
 }
 
-export default function ServicesSection({ services, isLoading, resolveImagePath }: ServicesSectionProps) {
+export default function ServicesSection({ services, isLoading, resolveImagePath, serverMessage, serverError }: ServicesSectionProps) {
   return (
     <section className="section-padding bg-primary-black">
       <div className="container-max">
           <h2 className="text-heading-1 text-center text-gradient mb-12">خدمات قانونية متخصصة تلبي احتياجاتك</h2>
+
+          {/* Server feedback */}
+          {/**
+           * The parent can pass `serverMessage` for success or `serverError` for errors.
+           * These are displayed under the heading.
+           */}
+          {serverMessage && (
+            <div className="max-w-xl mx-auto mt-4 p-3 rounded bg-green-600 text-white text-center font-cairo">
+              {serverMessage}
+            </div>
+          )}
+
+          {serverError && (
+            <div className="max-w-xl mx-auto mt-4 p-3 rounded bg-red-600 text-white text-center font-cairo">
+              {serverError}
+            </div>
+          )}
 
         <div className="grid md:grid-cols-3 gap-6">
           {isLoading ? (
