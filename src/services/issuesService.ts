@@ -166,15 +166,15 @@ export const buildIssueFormData = (input: IssueSubmitInput): FormData => {
   formData.append('IssueTypeId', input.issueTypeId)
   formData.append('Defendant', input.defendant)
 
-  input.issueAttachmentFiles.forEach((file) => {
-    formData.append('IssueAttachmentDTOs', file, file.name)
-  })
+  const attachments = input.issueAttachmentDTOs || []
+  if (Array.isArray(attachments)) {
+    attachments.forEach((file) => {
+      formData.append('IssueAttachmentDTOs', file, file.name)
+    })
+  }
 
   input.issueClients.forEach((client, index) => {
     formData.append(`IssueClients[${index}].name`, client.name)
-    if (client.consultationClientId) {
-      formData.append(`IssueClients[${index}].ConsultationClientId`, client.consultationClientId)
-    }
     if (client.nationalIdentityFile) {
       formData.append(
         `IssueClients[${index}].nationalIdentityPath`,

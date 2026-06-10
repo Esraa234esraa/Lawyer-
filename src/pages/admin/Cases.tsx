@@ -67,6 +67,9 @@ export default function AdminCases() {
   const addIssueMutation = useAddIssue()
   const deleteIssueMutation = useDeleteIssue()
 
+  // Helper function to create a stable key for file comparison
+  const getFileKey = (file: File): string => `${file.name}::${file.size}`
+
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [editingIssue, setEditingIssue] = useState<Issue | null>(null)
   const [errors, setErrors] = useState<FormErrors>({})
@@ -112,10 +115,7 @@ export default function AdminCases() {
         }
 
         const isDuplicate = issueAttachmentFiles.some(
-          (existing) =>
-            existing.name === file.name &&
-            existing.size === file.size &&
-            existing.lastModified === file.lastModified
+          (existing) => getFileKey(existing) === getFileKey(file)
         )
 
         if (!isDuplicate) {
@@ -159,14 +159,7 @@ export default function AdminCases() {
     const removedFile = consultationDownloadedFiles[path]
     if (removedFile) {
       setIssueAttachmentFiles((prev) =>
-        prev.filter(
-          (existing) =>
-            !(
-              existing.name === removedFile.name &&
-              existing.size === removedFile.size &&
-              existing.lastModified === removedFile.lastModified
-            )
-        )
+        prev.filter((existing) => getFileKey(existing) !== getFileKey(removedFile))
       )
       setConsultationDownloadedFiles((prev) => {
         const next = { ...prev }
@@ -304,9 +297,11 @@ export default function AdminCases() {
     )
   }
 
-  const handleSelectConsultationClient = (index: number, clientId?: string) => {
+  const handleSelectConsultationClient = async (index: number, clientId?: string) => {
     const clientsList = (consultationClientsQuery.data || []) as ConsultationClient[]
-    const selected = clientsList.find((c) => c.id === clientId)
+    const selected = clientsList.find((c) => c.id === clientId) as any
+
+    // Pre-fill basic client fields from the selected consultation client if available
     setIssueClients((prev) =>
       prev.map((client, i) =>
         i === index
@@ -314,13 +309,49 @@ export default function AdminCases() {
               ...client,
               selectedClientId: clientId,
               name: selected ? selected.fullName : client.name,
-              nationalId: '',
+              // try to fill nationalId and identity path if provided by API
+              nationalId: selected && selected.nationalId ? String(selected.nationalId) : client.nationalId,
+              nationalIdentityPath: selected && selected.nationalIdentityPath ? selected.nationalIdentityPath : client.nationalIdentityPath,
               selectedAttachmentPaths: [],
             }
           : client
       )
     )
+
     setActiveClientIndex(clientId ? index : null)
+
+    // If the selected client includes an identity path, try to download and attach it
+    const identityPath = selected && selected.nationalIdentityPath
+    if (identityPath) {
+      try {
+        setAttachmentDownloadStatus((prev) => ({ ...prev, [identityPath]: 'loading' }))
+        setAttachmentDownloadError((prev) => ({ ...prev, [identityPath]: '' }))
+
+        let file = consultationDownloadedFiles[identityPath]
+        if (!file) {
+          file = await downloadAttachmentAsFile(identityPath)
+          setConsultationDownloadedFiles((prev) => ({ ...prev, [identityPath]: file }))
+        }
+
+        // set the downloaded file into the specific client row
+        setIssueClients((prev) =>
+          prev.map((client, i) =>
+            i === index
+              ? {
+                  ...client,
+                  nationalIdentityFile: file,
+                  nationalIdentityPath: identityPath,
+                }
+              : client
+          )
+        )
+
+        setAttachmentDownloadStatus((prev) => ({ ...prev, [identityPath]: 'idle' }))
+      } catch (err: any) {
+        setAttachmentDownloadStatus((prev) => ({ ...prev, [identityPath]: 'error' }))
+        setAttachmentDownloadError((prev) => ({ ...prev, [identityPath]: err?.message || 'فشل تحميل الهوية' }))
+      }
+    }
   }
 
   const validate = (): boolean => {
@@ -392,16 +423,23 @@ export default function AdminCases() {
     }
 
     // Merge consultation-downloaded files with current uploaded files and dedupe
+    const safeIssueFiles = issueAttachmentFiles || []
     const downloadedFiles = Object.values(consultationDownloadedFiles || {})
     const mergedFilesMap = new Map<string, File>()
 
     const addFileToMap = (file: File) => {
-      const key = `${file.name}::${file.size}::${file.lastModified}`
-      if (!mergedFilesMap.has(key)) mergedFilesMap.set(key, file)
+      if (file && file.name) {
+        const key = getFileKey(file)
+        if (!mergedFilesMap.has(key)) mergedFilesMap.set(key, file)
+      }
     }
 
-    issueAttachmentFiles.forEach(addFileToMap)
-    downloadedFiles.forEach(addFileToMap)
+    if (Array.isArray(safeIssueFiles)) {
+      safeIssueFiles.forEach(addFileToMap)
+    }
+    if (Array.isArray(downloadedFiles)) {
+      downloadedFiles.forEach(addFileToMap)
+    }
 
     const mergedFiles = Array.from(mergedFilesMap.values())
 
@@ -410,7 +448,7 @@ export default function AdminCases() {
       titeleEn: titeleEn.trim(),
       issueTypeId,
       defendant: defendant.trim(),
-      issueAttachmentFiles: mergedFiles,
+      issueAttachmentDTOs: mergedFiles,
       issueClients: issueClients
         .filter((client) =>
           client.selectedClientId ||

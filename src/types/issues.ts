@@ -47,6 +47,6 @@ export interface IssueSubmitInput {
   titeleEn?: string
   issueTypeId: string
   defendant: string
-  issueAttachmentFiles: File[]
+  issueAttachmentDTOs: File[]
   issueClients: IssueClientInput[]
 }
