@@ -207,20 +207,54 @@ export default function AdminCases() {
     }
   }
 
-  const handleToggleClientNationalIdentityPath = (path: string, checked: boolean) => {
+  const handleToggleClientNationalIdentityPath = async (path: string, checked: boolean) => {
     if (activeClientIndex === null) return
 
-    setIssueClients((prev) =>
-      prev.map((client, idx) =>
-        idx === activeClientIndex
-          ? {
-              ...client,
-              nationalIdentityPath: checked ? path : client.nationalIdentityPath === path ? '' : client.nationalIdentityPath,
-              nationalIdentityFile: checked ? undefined : client.nationalIdentityFile,
-            }
-          : client
+    if (!checked) {
+      setIssueClients((prev) =>
+        prev.map((client, idx) =>
+          idx === activeClientIndex
+            ? {
+                ...client,
+                nationalIdentityPath:
+                  client.nationalIdentityPath === path ? '' : client.nationalIdentityPath,
+                nationalIdentityFile: client.nationalIdentityFile,
+              }
+            : client
+        )
       )
-    )
+      return
+    }
+
+    setAttachmentDownloadStatus((prev) => ({ ...prev, [path]: 'loading' }))
+    setAttachmentDownloadError((prev) => ({ ...prev, [path]: '' }))
+
+    try {
+      let file = consultationDownloadedFiles[path]
+      if (!file) {
+        file = await downloadAttachmentAsFile(path)
+        setConsultationDownloadedFiles((prev) => ({ ...prev, [path]: file }))
+      }
+
+      setIssueClients((prev) =>
+        prev.map((client, idx) =>
+          idx === activeClientIndex
+            ? {
+                ...client,
+                nationalIdentityPath: path,
+                nationalIdentityFile: file,
+              }
+            : client
+        )
+      )
+
+      setAttachmentDownloadStatus((prev) => ({ ...prev, [path]: 'idle' }))
+    } catch (error: any) {
+      const message = error?.message || 'فشل تحميل الهوية'
+      setAttachmentDownloadStatus((prev) => ({ ...prev, [path]: 'error' }))
+      setAttachmentDownloadError((prev) => ({ ...prev, [path]: message }))
+      toast.error(message)
+    }
   }
 
   const isPending =
@@ -443,9 +477,8 @@ export default function AdminCases() {
       return
     }
 
-    // Merge consultation-downloaded files with current uploaded files and dedupe
-    const safeIssueFiles = issueAttachmentFiles || []
-    const downloadedFiles = Object.values(consultationDownloadedFiles || {})
+    // Only submit files that were explicitly selected as issue attachments.
+    // Do not include downloaded consultation attachments used solely for national identity.
     const mergedFilesMap = new Map<string, File>()
 
     const addFileToMap = (file: File) => {
@@ -455,11 +488,9 @@ export default function AdminCases() {
       }
     }
 
+    const safeIssueFiles = issueAttachmentFiles || []
     if (Array.isArray(safeIssueFiles)) {
       safeIssueFiles.forEach(addFileToMap)
-    }
-    if (Array.isArray(downloadedFiles)) {
-      downloadedFiles.forEach(addFileToMap)
     }
 
     const mergedFiles = Array.from(mergedFilesMap.values())
